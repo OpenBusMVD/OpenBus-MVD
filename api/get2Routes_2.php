@@ -1,7 +1,6 @@
 <?php 
 	header('Content-Type: application/json');
 
-
 	$jsonParadas = file_get_contents('../assets/data/paradas_total.json');
 	$jsonParadas = json_decode($jsonParadas, true);
 	$jsonOmnibus = file_get_contents('../assets/data/omnibus_paradas.json');

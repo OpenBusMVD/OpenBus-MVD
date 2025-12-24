@@ -1,6 +1,5 @@
 <?php 
 header('Content-Type: application/json');
-header("Access-Control-Allow-Origin: *");
 switch (date('N')) {
 	case 1:
 		$day = "HABIL";
