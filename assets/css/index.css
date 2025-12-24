@@ -1,0 +1,213 @@
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+body{
+    width: 100%;
+    height: 100%; 
+    margin: 0; 
+    padding: 0;
+}
+
+.side-panel {
+	width: 25vw;
+	height: 100vh;
+	background-color: white;
+	position: absolute;
+	right: -25vw;
+	top: 0;
+	transition: right 0.3s ease-in-out;
+	z-index: 10000;
+    pointer-events: auto;
+	box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
+    /*padding: 10px;*/
+	overflow-y: auto;
+}
+
+.side-panel.open {
+    right: 0;
+}
+
+.toggle-btn {
+	width: 2vw;
+	height: 5vh;
+	background-color: black;
+	color: white;
+	border: none;
+	position: absolute;
+	right: 0;
+	top: 50%;
+	transform: translateY(-50%);
+	cursor: pointer;
+	z-index: 10000;
+	transition: right 0.3s ease-in-out;
+}
+
+.toggle-btn.open{
+	right:25vw;
+}
+
+.search-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+            position: relative;
+            padding: 10px;
+            /*
+            position: absolute;
+            right: 0;
+            top: 0;
+            z-index: 100000;
+            width: 25vw;
+            height: 12vh;*/
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background-color: #f1f1f1;
+            padding: 5px;
+            border-radius: 5px;
+            position: relative;
+        }
+
+        .inputsSearch{
+        	width: 100%;
+        	display: flex;
+        }
+        .inputsSearch input {
+        	margin: 5px;
+        	width: 100%;
+            border: black solid 1px;
+            background: #ffffff;
+            flex: 1;
+            padding: 5px;
+            margin-right: 5px;
+        }
+
+        .inputsSearch input:disabled {
+        	margin: 5px;
+        	width: 100%;
+            border: red solid 1px;
+            background: #ffffff;
+            flex: 1;
+            padding: 5px;
+            margin-right: 5px;
+        }
+
+        .popup {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background-color: white;
+            border: 1px solid #ccc;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            /*z-index: 20;*/
+            height: auto;
+            overflow-y: auto;
+            display: none;
+            /*padding: 10px;
+            flex-wrap: wrap;
+            gap: 5px;*/
+            left: -10px; /* igual al padding de .search-container pero negativo */
+    		width: calc(100% + 20px); /* compensa el -10px izquierdo y derecho */
+        }
+
+        .popup.active {
+            display: block;
+        }
+
+        .popup-item {
+            background-color: #eee;
+            padding: 5px 10px;
+            /*border-radius: 5px;*/
+            cursor: pointer;
+            border: 1px solid black;
+        }
+
+        .search-icon, .extra-icon {
+            width: 20px;
+            height: 20px;
+            background-color: gray;
+            display: inline-block;
+            border-radius: 50%;
+        }
+
+        .extra-icon {
+            display: block;
+            margin: 10px auto;
+        }
+
+        .route {
+            margin: 0;
+            border-bottom: 1px solid #ddd;
+            padding: 10px 0;
+            cursor: pointer;
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            z-index: 10005;
+            user-select: none;
+        }
+
+        .route.selected{
+            background-color: #E0E0E0;
+            border-left: 4px solid #007bff;
+        }
+
+        .route div, p{
+            margin-left: 10px;
+        }
+
+        .line{
+            width: 12px;
+            height: 0;
+            border: 1px solid #C4C4C4;
+            margin: 3px;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        .time {
+            font-weight: bold;
+        }
+
+        .duration {
+            color: gray;
+            font-size: 0.9em;
+        }
+
+        .bus-icons {
+            margin-top: 5px;
+        }
+
+        .bus-icons h3 {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 5px;
+            color: white;
+            font-size: 0.9em;
+        }
+
+        .bus-blue { background-color: #2f578a; }
+        .bus-yellow { background-color: #fff800; }
+        .bus-red { background-color: #cc0033; }
+        .bus-green { background-color: #66cc33; }
+
+#map{
+	width: 100vw; 
+	height: 100vh; 
+	position: relative;
+	overflow: hidden;
+    pointer-events: all;
+	/*z-index: 1;*/
+}
+
+.leaflet-routing-container {
+    display: none !important;
+}
