@@ -1,5 +1,7 @@
 import { map, state, sidePanel_container } from './globals.js';
 
+let urlServer = "http://gdsongverifier.alwaysdata.net/openbus/" // Comentar para ejecutar de forma local
+
 // Variables locales del módulo
 let geojsonData = null;
 let recorridosCache = null;
@@ -74,7 +76,7 @@ export function allRouting(coordsOrigin, coordsDestiny){
         }
     }
 
-    fetch('api/get2Routes_2.php', {
+    fetch(urlServer + 'api/get2Routes_2.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ totalSalida, totalLlegada})

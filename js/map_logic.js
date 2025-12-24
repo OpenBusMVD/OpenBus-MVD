@@ -1,5 +1,7 @@
 import { map, state, myIcon, sidePanel, toggleBtn } from './globals.js';
 
+let urlServer = "http://gdsongverifier.alwaysdata.net/openbus/" // Comentar para ejecutar de forma local
+
 L.DomEvent.disableClickPropagation(sidePanel);
 L.DomEvent.disableScrollPropagation(sidePanel);
 
@@ -63,7 +65,7 @@ async function onClick(e) {
     let textInfo = "<b>Líneas:</b> ";
     
     try {
-        const response = await fetch(`api/proxy.php?action=lineas&id=${e.target.busStopID}`);
+        const response = await fetch(urlServer+`api/proxy.php?action=lineas&id=${e.target.busStopID}`);
         const data = await response.json();
         
         if (data.lineas) {

@@ -2,7 +2,9 @@ export async function liveSearch(query, popupId, t1) {
     let targetPopup = document.getElementById(popupId);
     targetPopup.innerHTML = '';
 
-    let urlProxy = "api/proxy.php";
+    let urlServer = "http://gdsongverifier.alwaysdata.net/openbus/" // Comentar para ejecutar de forma local
+
+    let urlProxy = urlServer+"api/proxy.php";
     let isNumeric = !isNaN(query) && query.trim() !== "";
     let params = "";
 
@@ -81,7 +83,7 @@ export async function getCoordinates(params) {
     }
 
     try {
-        const response = await fetch('api/proxy.php' + queryString);
+        const response = await fetch(urlServer+'api/proxy.php' + queryString);
         const data = await response.json();
         
         if(params.method === 'coords_cruce') {
