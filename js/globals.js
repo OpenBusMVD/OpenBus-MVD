@@ -13,7 +13,7 @@ export var iconBus = L.icon({
 export var map = L.map('map').setView([-34.872972, -56.14629063], 13);
 
 L.tileLayer.wms(
-    'http://geoserver.montevideo.gub.uy/geoserver/gwc/service/wms?', {
+    'https://geoserver.montevideo.gub.uy/geoserver/gwc/service/wms?', {
         maxZoom: 18,
         layers: 'stm_carto_basica',
         format: 'image/png',
