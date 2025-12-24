@@ -1,8 +1,7 @@
+
 export async function liveSearch(query, popupId, t1) {
     let targetPopup = document.getElementById(popupId);
     targetPopup.innerHTML = '';
-
-    let urlServer = "https://gdsongverifier.alwaysdata.net/openbus/" // Comentar para ejecutar de forma local
 
     let urlProxy = urlServer+"api/proxy.php";
     let isNumeric = !isNaN(query) && query.trim() !== "";

@@ -1,7 +1,5 @@
 import { map, state, myIcon, sidePanel, toggleBtn } from './globals.js';
 
-let urlServer = "https://gdsongverifier.alwaysdata.net/openbus/" // Comentar para ejecutar de forma local
-
 L.DomEvent.disableClickPropagation(sidePanel);
 L.DomEvent.disableScrollPropagation(sidePanel);
 
