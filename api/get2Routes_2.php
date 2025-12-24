@@ -1,9 +1,13 @@
 <?php 
-	header('Content-Type: application/json');
+	header("Access-Control-Allow-Origin: https://openbusmvd.github.io");
+header("Access-Control-Allow-Methods: GET, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
+	
+	$assetsDir = ""; // = "../assets/data/" si se ejecuta local
 
-	$jsonParadas = file_get_contents('../assets/data/paradas_total.json');
+	$jsonParadas = file_get_contents($assetsDir.'paradas_total.json');
 	$jsonParadas = json_decode($jsonParadas, true);
-	$jsonOmnibus = file_get_contents('../assets/data/omnibus_paradas.json');
+	$jsonOmnibus = file_get_contents($assetsDir.'omnibus_paradas.json');
 	$jsonOmnibus = json_decode($jsonOmnibus, true);
 	$data = file_get_contents('php://input', true);
 	$data = json_decode($data, true);

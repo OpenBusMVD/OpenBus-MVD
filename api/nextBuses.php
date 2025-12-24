@@ -1,5 +1,7 @@
 <?php 
-header('Content-Type: application/json');
+header("Access-Control-Allow-Origin: https://openbusmvd.github.io");
+header("Access-Control-Allow-Methods: GET, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
 switch (date('N')) {
 	case 1:
 		$day = "HABIL";
