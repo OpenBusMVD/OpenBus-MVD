@@ -1,4 +1,4 @@
-import { map, state, myIcon, sidePanel, toggleBtn } from './globals.js';
+import { map, state, myIcon, sidePanel, toggleBtn, urlServer } from './globals.js';
 
 L.DomEvent.disableClickPropagation(sidePanel);
 L.DomEvent.disableScrollPropagation(sidePanel);

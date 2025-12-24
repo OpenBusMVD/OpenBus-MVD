@@ -1,4 +1,4 @@
-import { map, state, sidePanel_container } from './globals.js';
+import { map, state, sidePanel_container, urlServer } from './globals.js';
 
 // Variables locales del módulo
 let geojsonData = null;

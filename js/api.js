@@ -1,4 +1,4 @@
-
+import { urlServer } from './globals.js';
 export async function liveSearch(query, popupId, t1) {
     let targetPopup = document.getElementById(popupId);
     targetPopup.innerHTML = '';
