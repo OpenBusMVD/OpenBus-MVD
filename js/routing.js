@@ -262,8 +262,8 @@ async function updateBusTimes() {
 
             if (data.hora) {
                 let textoDuracion = "";
-                if (data.minsTotales > 0) {
-                    textoDuracion = `${data.minsTotales} min`;
+                if (data.minutosTotales > 0) {
+                    textoDuracion = `${data.minutosTotales} min`;
                 } else {
                     // Fallback si falla el cálculo de bajada
                     textoDuracion = "En camino"; 
@@ -273,7 +273,7 @@ async function updateBusTimes() {
 
                 let horaLlegada = data.horaLlegada !== "??:??" ? data.horaLlegada : "Destino";
                 timeElement.textContent = `${data.hora} — ${horaLlegada}`;
-                travelElement.textContent = `${data.minsTotales} min`
+                travelElement.textContent = `${data.minutosTotales} min`
                 
                 if(data.restante < 5) durationElement.style.color = "#d32f2f";
 
