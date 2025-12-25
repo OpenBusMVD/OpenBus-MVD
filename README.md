@@ -35,8 +35,9 @@ Al estar hosteado en un servidor gratuito, la página anda considerablemente má
 ## Cómo ejecutar localmente
 
 Se necesita tener PHP instalado, como también un servidor HTTP como Apache.
-Luego clonas el repo. En algunos archivos js se conecta a un servidor provisorio donde se encuentra la api hosteada. Para un mejor y más rápido desarrollo local (y para no saturar al otro servidor), se recomienda seguir los comentarios en js/globals.js y en api/get2Routes_2.php.
-Finalmente abriendo index.html DESDE el servidor HTTP (no con doble click), debería funcionar todo.
+Luego clonas el repo. En algunos archivos js se conecta a un servidor provisorio donde se encuentra la api hosteada. Para un mejor y más rápido desarrollo local (y para no saturar al otro servidor), se recomienda seguir el comentario en js/globals.js.
+Ademas, se encuentra buses.7z en assets/data/, el cual se debe descomprimir en esa misma carpeta.
+Finalmente abriendo index.html DESDE el servidor HTTP (NO con doble click), debería funcionar todo.
 
 ## Estado del proyecto
 
