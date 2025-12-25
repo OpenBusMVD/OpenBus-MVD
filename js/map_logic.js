@@ -13,7 +13,7 @@ sidePanel.addEventListener('mouseleave', () => map.dragging.enable());
 
 export async function cargarParadas() {
     try {
-        const response = await fetch('assets/data/busStopsInfo_clean.json'); 
+        const response = await fetch('assets/data/busStopsInfo.json'); 
         const arr = await response.json();
 
         arr.forEach((arrays, i) => {
