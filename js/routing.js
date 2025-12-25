@@ -257,8 +257,9 @@ async function updateBusTimes() {
             const url = `${urlServer}api/proxy.php?action=lineas&idParada=${idParada}&idLinea=${idLinea}&idBajada=${idBajada}`;
             
             const response = await fetch(url);
-            console.log(response);
+            
             const data = await response.json();
+            //console.log(data);
 
             if (data.hora) {
                 let textoDuracion = "";
@@ -318,7 +319,7 @@ function handle2Routes(data, salida, llegada){
     });
 
     let i = 0;
-    while(entradas[i] !== undefined && i < 7){
+    while(entradas[i] !== undefined){ // Si quiero limitar puedo poner i < X
         var omnibus = document.createElement('div');
         omnibus.className = 'route';
         if(i == 0) omnibus.classList.add('selected');

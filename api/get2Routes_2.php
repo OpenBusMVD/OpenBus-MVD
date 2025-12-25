@@ -1,9 +1,26 @@
 <?php 
+
 	header("Access-Control-Allow-Origin: https://openbusmvd.github.io");
-header("Access-Control-Allow-Methods: GET, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type");
+	header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+	header("Access-Control-Allow-Headers: Content-Type");
+	header("Content-Type: application/json");
+
+	if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+	    http_response_code(200);
+	    exit;
+	}
+
+	ini_set('memory_limit', '256M');
+
+	$inputJSON = file_get_contents('php://input');
+	$data = json_decode($inputJSON, true);
+
+	if (is_null($data)) {
+	    echo json_encode(["rutas" => [], "debug" => "No se recibieron datos POST"]);
+	    exit;
+	}
 	
-	$assetsDir = ""; // = "../assets/data/" si se ejecuta local
+	$assetsDir = __DIR__ . '/../assets/data/';
 
 	$jsonParadas = file_get_contents($assetsDir.'paradas_total.json');
 	$jsonParadas = json_decode($jsonParadas, true);

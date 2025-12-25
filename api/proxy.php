@@ -1,7 +1,7 @@
 <?php
- header("Access-Control-Allow-Origin: https://openbusmvd.github.io");
-header("Access-Control-Allow-Methods: GET, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type");
+    header("Access-Control-Allow-Origin: https://openbusmvd.github.io");
+    header("Access-Control-Allow-Methods: GET, OPTIONS");
+    header("Access-Control-Allow-Headers: Content-Type");
 
     if (!isset($_GET['action'])) {
         http_response_code(400);
@@ -9,9 +9,15 @@ header("Access-Control-Allow-Headers: Content-Type");
         exit;
     }
 
-    function hhmmToMin(string $hhmm): int {
-        [$h, $m] = array_map('intval', explode(':', $hhmm));
-        return $h * 60 + $m;
+    $dbPath = __DIR__ . '/../assets/data/buses.db';
+
+    try {
+        $db = new PDO("sqlite:$dbPath");
+        $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $db->exec('PRAGMA journal_mode = WAL;'); 
+    } catch (PDOException $e) {
+        echo json_encode(["error" => "Error DB: " . $e->getMessage()]);
+        exit;
     }
 
     function minToHHMM(int $min): string {
@@ -20,128 +26,142 @@ header("Access-Control-Allow-Headers: Content-Type");
         return sprintf('%02d:%02d', $h, $m);
     }
 
-    function proximoOmnibus($horarios, $horaActual) {
-        foreach ($horarios as $index => $viaje) {
-            $horarioStr = $viaje[0];
-            $horarioMinutos = hhmmToMin($horarioStr);
 
-            if ($horarioMinutos >= $horaActual) {
-                $horaStr = minToHHMM($horarioMinutos);
-                $restante = $horarioMinutos - $horaActual;
-                
-                // Ajuste por si la hora actual es del día anterior y el bus es de madrugada
-                if ($restante < 0) $restante += 1440;
-
-                return [
-                    "hora" => $horaStr,
-                    "restante" => $restante,
-                    "minsTotales" => $horarioMinutos,
-                    "indice" => $index
-                ];
-            }
-        }
-
-        return [
-            "hora" => null,
-            "mensaje" => "Error."
-        ];
+    function nextBuses($db, $idParada, $idLinea, $idBajada){
+        date_default_timezone_set('America/Montevideo');
+    
+    switch (date('N')) {
+        case 6: $day = "2"; break;
+        case 7: $day = "3"; break;
+        default: $day = "1"; break;
     }
 
+    $stmt = $db->prepare("SELECT id_variante FROM lineas_variantes WHERE id_linea = ?");
+    $stmt->execute([$idLinea]);
+    $variantes = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
-    function nextBuses($idParada, $idLinea, $idBajada){
-        date_default_timezone_set('America/Montevideo');
+    if (empty($variantes)) return json_encode(["hora" => null, "mensaje" => "Línea s/d"]);
+
+    $now = new DateTime("now");
+    $minsActual = (int)$now->format('H') * 60 + (int)$now->format('i');
+
+    $mejorCandidato = null;
+    $minimaEspera = 999999;
+
+    foreach ($variantes as $vid) {
         
-        switch (date('N')) {
-            case 6: $day = "2"; break;
-            case 7: $day = "3"; break;
-            default: $day = "1"; break;
+        // BUSCAR SUBIDA
+        $sql = "SELECT h.minutos, h.ordinal, v.internal_id 
+                FROM horarios h
+                JOIN viajes v ON h.internal_id = v.internal_id
+                WHERE v.tipo_dia = ? 
+                  AND v.id_variante = ? 
+                  AND h.id_parada = ? 
+                  AND h.minutos >= ? 
+                ORDER BY h.minutos ASC LIMIT 1";
+        
+        $stmt = $db->prepare($sql);
+        $stmt->execute([$day, $vid, $idParada, $minsActual]);
+        $busSubida = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$busSubida) continue;
+
+        $minSalida = intval($busSubida['minutos']);
+        
+        // Si este bus sale MUCHO más tarde que un candidato que ya tenemos,
+        // ni siquiera vale la pena calcularle la bajada
+        if ($minSalida >= $minimaEspera + $minsActual) continue;
+
+        $horaSalidaStr = minToHHMM($minSalida);
+        $internalId = $busSubida['internal_id'];
+        $ordSubida = intval($busSubida['ordinal']);
+
+        $restante = $minSalida - $minsActual;
+        if ($restante < 0) $restante += 1440;
+
+        // Si no hay bajada, este es un candidato válido
+        if ($idBajada === null) {
+            // Guardamos si es mejor que el anterior
+            if ($restante < $minimaEspera) {
+                $minimaEspera = $restante;
+                $mejorCandidato = [
+                    "hora" => $horaSalidaStr,
+                    "restante" => $restante,
+                    "minsTotales" => 0,
+                    "horaLlegada" => "Destino"
+                ];
+            }
+            continue;
         }
 
-        $assetsDir = "";
+        // BUSCAR BAJADA
+        $busBajada = null;
         
-        $mapaFile = $assetsDir . 'mapa_lineas.json';
-        if (!file_exists($mapaFile)) return json_encode(["hora" => null, "mensaje" => "Error sistema"]);
-        $mapaLineas = json_decode(file_get_contents($mapaFile), true);
-        
-        $variantesPosibles = $mapaLineas[$idLinea] ?? [];
-        if (empty($variantesPosibles)) return json_encode(["hora" => null, "mensaje" => "Línea s/d"]);
+        // ID Exacto
+        $sql = "SELECT minutos FROM horarios 
+                WHERE internal_id = ? AND id_parada = ?";
+        $stmt = $db->prepare($sql);
+        $stmt->execute([$internalId, $idBajada]);
+        $busBajada = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        $horariosFile = $assetsDir . 'tipo_dia_' . $day . '.json';
-        if (!file_exists($horariosFile)) return json_encode(["hora" => null, "mensaje" => "No hay horarios"]);
-        $jsonHorarios = json_decode(file_get_contents($horariosFile), true);
+        // Si falló el ID
+        if (!$busBajada) {
 
-        $mejorResultado = null;
+            $sqlOrd = "SELECT ordinal FROM horarios 
+                       JOIN viajes ON horarios.internal_id = viajes.internal_id
+                       WHERE viajes.tipo_dia = ? AND viajes.id_variante = ? AND horarios.id_parada = ? LIMIT 1";
+            $stmt = $db->prepare($sqlOrd);
+            $stmt->execute([$day, $vid, $idBajada]);
+            $resOrd = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$resOrd) continue;
+            
+            $ordBajada = intval($resOrd['ordinal']);
+            if ($ordBajada <= $ordSubida) continue;
 
-        $created = new DateTime("now");
-        $horaActual = (int)$created->format('H') * 60 + (int)$created->format('i');
+            $diffParadas = $ordBajada - $ordSubida;
+            $minEstimado = $minSalida + ceil($diffParadas * 0.7);
 
-        foreach ($variantesPosibles as $vid) {
-            $vid = (string)$vid;
+            $sql = "SELECT h.minutos 
+                    FROM horarios h
+                    JOIN viajes v ON h.internal_id = v.internal_id
+                    WHERE v.tipo_dia = ? 
+                      AND v.id_variante = ? 
+                      AND h.id_parada = ? 
+                      AND h.minutos >= ? 
+                    ORDER BY h.minutos ASC LIMIT 1";
+            
+            $stmt = $db->prepare($sql);
+            $stmt->execute([$day, $vid, $idBajada, $minEstimado]);
+            $busBajada = $stmt->fetch(PDO::FETCH_ASSOC);
+        }
 
-            // Verificar que la variante pase por la parada de subida
-            if (isset($jsonHorarios[$idParada][$vid])) {
-                $datosSubida = $jsonHorarios[$idParada][$vid];
-                
-                if ($idBajada === null) {
-                    $res = proximoOmnibus($datosSubida, $horaActual);
-                    if ($res['hora'] !== null) {
-                        return json_encode($res);
-                    }
-                    continue;
-                }
+        if ($busBajada) {
+            $minLlegada = intval($busBajada['minutos']);
+            if ($minLlegada < $minSalida) $minLlegada += 1440;
+            
+            $duracion = $minLlegada - $minSalida;
+            $horaLlegadaStr = minToHHMM($minLlegada);
 
-                if (isset($jsonHorarios[$idBajada][$vid])) {
-                    $datosBajada = $jsonHorarios[$idBajada][$vid];
-
-                    // Tomamos el primer viaje para ver el número de parada
-                    $ordSubida = intval($datosSubida[0][2]);
-                    $ordBajada = intval($datosBajada[0][2]);
-
-                    if ($ordBajada <= $ordSubida) {
-                        continue; // Dirección incorrecta (Vuelta)
-                    }
-
-                    // Se asumen 45 segundos por parada de diferencia
-                    $diferenciaParadas = $ordBajada - $ordSubida;
-                    $tiempoMinimoViaje = ceil($diferenciaParadas * 0.75); 
-
-                    $busSubida = proximoOmnibus($datosSubida, $horaActual);
-                    
-                    if ($busSubida['hora'] !== null) {
-                        $minSalida = $busSubida['minsTotales']; // Hora que pasa por mi parada
-
-                        // No usamos índices. Buscamos el primer bus que llegue DESPUÉS de (Salida + TiempoMinimo)
-                        $minLlegadaEstimada = $minSalida + $tiempoMinimoViaje;
-                        
-                        $horaLlegadaReal = "??:??";
-                        $duracion = 0;
-
-                        foreach ($datosBajada as $viajeBajada) {
-                            $tLlegada = hhmmToMin($viajeBajada[0]);
-                            
-                            // Ajuste medianoche: Si el bus de salida es 23:50 y llegada es 00:20
-                            if ($tLlegada < $minSalida && $minSalida > 1300) { 
-                                $tLlegada += 1440; 
-                            }
-
-                            if ($tLlegada >= $minLlegadaEstimada) {
-                                $horaLlegadaReal = $viajeBajada[0];
-                                $duracion = $tLlegada - $minSalida;
-                                break;
-                            }
-                        }
-
-                        if ($duracion > 0) {
-                            $busSubida['horaLlegada'] = $horaLlegadaReal;
-                            $busSubida['duracionViaje'] = $duracion;
-                            return json_encode($busSubida);
-                        }
-                    }
+            if ($duracion > 0) {
+                if ($restante < $minimaEspera) {
+                    $minimaEspera = $restante;
+                    $mejorCandidato = [
+                        "hora" => $horaSalidaStr,
+                        "restante" => $restante,
+                        "minutosTotales" => $duracion,
+                        "horaLlegada" => $horaLlegadaStr
+                    ];
                 }
             }
         }
+    }
 
-        return json_encode(["hora" => null, "mensaje" => "Sin coincidencia"]);
+    if ($mejorCandidato) {
+        return json_encode($mejorCandidato);
+    }
+
+    return json_encode(["hora" => null, "mensaje" => "Sin servicio"]);
         
         
     }
@@ -154,10 +174,11 @@ header("Access-Control-Allow-Headers: Content-Type");
         case 'lineas':
             // Obtener líneas de una parada
             // Uso: proxy.php?action=lineas&id=1234
-            $idParada = $_GET['idParada'];
-            $idLinea = $_GET['idLinea'];
-            $idBajada = $_GET['idBajada'] ?? null;
-            echo(nextBuses($idParada, $idLinea, $idBajada));
+            $p = $_GET['idParada'] ?? null;
+            $l = $_GET['idLinea'] ?? null;
+            $b = $_GET['idBajada'] ?? null;
+            if ($p && $l) echo nextBuses($db, $p, $l, $b);
+            else echo json_encode(["error" => "Faltan parametros"]);
         break;
 
         case 'buscar_calle':
