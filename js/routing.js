@@ -235,7 +235,64 @@ function handleUISearch(routeId){
     handleLines(entradas[id][1], coordsSalidaBus, coordsBajadaBus, coordsTrasbordoBus, coordsLlegadaBus); 
 }
 
+async function updateBusTimes() {
+    // Seleccionamos todos los elementos que tienen los datos guardados
+    const elements = document.querySelectorAll('.duration[data-parada]');
+
+    elements.forEach(async (el) => {
+        const idParada = el.dataset.parada;
+        const idLinea = el.dataset.linea;
+        const idBajada = el.dataset.bajada;
+        const index = el.dataset.index;
+        
+        const timeElement = document.getElementById(`time-${index}`);
+        const travelElement = document.getElementById(`travel-${index}`)
+        const durationElement = el;
+
+        durationElement.style.visibility = 'visible';
+        timeElement.style.visibility = 'visible';
+        travelElement.style.visibility = 'visible';
+
+        try {
+            const url = `${urlServer}api/proxy.php?action=lineas&idParada=${idParada}&idLinea=${idLinea}&idBajada=${idBajada}`;
+            
+            const response = await fetch(url);
+            console.log(response);
+            const data = await response.json();
+
+            if (data.hora) {
+                let textoDuracion = "";
+                if (data.duracionViaje > 0) {
+                    textoDuracion = `${data.duracionViaje} min`;
+                } else {
+                    // Fallback si falla el cálculo de bajada
+                    textoDuracion = "En camino"; 
+                }
+                
+                durationElement.textContent = `${data.restante} min`;
+
+                let horaLlegada = data.horaLlegada !== "??:??" ? data.horaLlegada : "Destino";
+                timeElement.textContent = `${data.hora} — ${horaLlegada}`;
+                travelElement.textContent = `${data.duracionViaje} min`
+                
+                if(data.restante < 5) durationElement.style.color = "#d32f2f";
+
+            } else {
+                document.getElementById(index).style.display = 'none';
+            }
+
+        } catch (error) {
+            console.error("Error fetching times:", error);
+            // Ocultar en caso de error
+            durationElement.style.visibility = 'hidden';
+            timeElement.style.visibility = 'hidden';
+            travelElement.style.visibility = 'hidden';
+        }
+    });
+}
+
 function handle2Routes(data, salida, llegada){
+    console.log(data);
     entradas = Object.entries(data);
     sidePanel_container.innerHTML = '';
 
@@ -263,15 +320,35 @@ function handle2Routes(data, salida, llegada){
     let i = 0;
     while(entradas[i] !== undefined && i < 7){
         var omnibus = document.createElement('div');
-        omnibus.className = 'route'
+        omnibus.className = 'route';
         if(i == 0) omnibus.classList.add('selected');
         omnibus.id = i;
+
+        let timeId = `time-${i}`;
+        let durationId = `duration-${i}`;
+        let travelId = `travel-${i}`;
+        
+        let pId = entradas[i][1].salida.idParada;
+        let lId = entradas[i][1].salida.idLinea;
+        let bId = entradas[i][1].salida.idBajada;
 
         let color;
         if(lineas_ucot.includes(entradas[i][1].salida.idLinea.toString())) color = "bus-yellow";
         else if(lineas_coetc.includes(entradas[i][1].salida.idLinea.toString())) color = "bus-red";
         else if(lineas_come.includes(entradas[i][1].salida.idLinea.toString())) color = "bus-green";
         else color = "bus-blue";
+
+        let htmlContent = '';
+        
+        let headerInfo = `
+            <p class="time" id="${timeId}">--:--</p>
+            <p class="duration" id="${durationId}"
+               data-parada="${pId}" 
+               data-linea="${lId}"
+               data-bajada="${bId}" 
+               data-index="${i}">Cargando...</p>
+            <p class="travel" id="${travelId}"</p>
+        `;
 
         if(entradas[i][1].trasbordo.length != 0){
             let colorTrasbordo;
@@ -280,26 +357,27 @@ function handle2Routes(data, salida, llegada){
             else if(lineas_come.includes(entradas[i][1].trasbordo.idLinea.toString())) colorTrasbordo = "bus-green";
             else colorTrasbordo = "bus-blue";
 
-            omnibus.innerHTML = `
-            <p class="time">12:39 p.m.—1:04 p.m.</p>
-            <p class="duration">25 min</p>
+            htmlContent = headerInfo + `
             <div class="bus-icons">
                 <h3 class="${color}">${entradas[i][1].salida.idLinea}</h3> 
                 <div class="line"></div>
                 <h3 class="${colorTrasbordo}">${entradas[i][1].trasbordo.idLinea}</h3> 
             </div>`;
         } else {
-            omnibus.innerHTML = `
-            <p class="time">12:39 p.m.—1:04 p.m.</p>
-            <p class="duration">25 min</p>
+            htmlContent = headerInfo + `
             <div class="bus-icons">
                 <h3 class="${color}">${entradas[i][1].salida.idLinea}</h3> 
             </div>`;
         }
+        
+        omnibus.innerHTML = htmlContent;
         sidePanel_container.appendChild(omnibus);
         i++;
     }
+
     handleUISearch(0);
+
+    updateBusTimes(); 
 }
 
 sidePanel_container.addEventListener('click', (event) => {

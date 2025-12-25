@@ -13,7 +13,7 @@ sidePanel.addEventListener('mouseleave', () => map.dragging.enable());
 
 export async function cargarParadas() {
     try {
-        const response = await fetch('assets/data/busStopsInfo.json'); 
+        const response = await fetch('assets/data/busStopsInfo_clean.json'); 
         const arr = await response.json();
 
         arr.forEach((arrays, i) => {
@@ -63,7 +63,7 @@ async function onClick(e) {
     let textInfo = "<b>Líneas:</b> ";
     
     try {
-        const response = await fetch(urlServer+`api/proxy.php?action=lineas&id=${e.target.busStopID}`);
+        const response = await fetch(urlServer+`api/proxy.php?action=lineas&idParada=${e.target.busStopID}`);
         const data = await response.json();
         
         if (data.lineas) {
