@@ -5,9 +5,9 @@ header("Access-Control-Allow-Headers: Content-Type");
 	
 	$assetsDir = ""; // = "../assets/data/" si se ejecuta local
 
-	$jsonParadas = file_get_contents($assetsDir.'paradas_total.json');
+	$jsonParadas = file_get_contents($assetsDir.'paradas_total_clean.json');
 	$jsonParadas = json_decode($jsonParadas, true);
-	$jsonOmnibus = file_get_contents($assetsDir.'omnibus_paradas.json');
+	$jsonOmnibus = file_get_contents($assetsDir.'omnibus_paradas_clean.json');
 	$jsonOmnibus = json_decode($jsonOmnibus, true);
 	$data = file_get_contents('php://input', true);
 	$data = json_decode($data, true);
@@ -36,7 +36,6 @@ header("Access-Control-Allow-Headers: Content-Type");
 
 	foreach($salida as $idBusStop => $distancia) {
 		$actualParada = $jsonParadas[$distancia['busID']];
-			//$totalTrasbordo[] = $actualParada;
 		foreach($actualParada['lineas'] as $lineaId => $lineaData){
 			foreach($lineaData as $variantes){
 				if(!isset($salidaDistancia[$lineaId][$variantes['cod_varian']]["distancia"]) || $distancia['distancia'] < $salidaDistancia[$lineaId][$variantes['cod_varian']]["distancia"]){
