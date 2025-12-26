@@ -1,2 +1,3 @@
 *.db
 assets/data/buses.7z
+.env

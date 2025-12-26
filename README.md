@@ -1,4 +1,5 @@
 # OpenBus MVD
+
 Alternativa open-source como página/app para el transporte público de Montevideo.
 
 ## Demo
@@ -32,12 +33,25 @@ Al estar hosteado en un servidor gratuito, la página anda considerablemente má
   - Frontend: GitHub Pages
   - API: AlwaysData
 
-## Cómo ejecutar localmente
+## Ejecución local
+
+### Prerequisitos
 
 Se necesita tener PHP instalado, como también un servidor HTTP como Apache.
 Luego clonas el repo. En algunos archivos js se conecta a un servidor provisorio donde se encuentra la api hosteada. Para un mejor y más rápido desarrollo local (y para no saturar al otro servidor), se recomienda seguir el comentario en js/globals.js.
 Ademas, se encuentra buses.7z en assets/data/, el cual se debe descomprimir en esa misma carpeta.
 Finalmente abriendo index.html DESDE el servidor HTTP (NO con doble click), debería funcionar todo.
+
+### Ejecutar con Docker
+
+Para ejecutar el proyecto sin tener que instalar las dependencias del proyecto tales como PHP o Apache, como también evitar conflictos de versiones con las instaladas en tu pc. Necesitás tener Docker instalado. Puedes iniciar el proyecto con :
+
+```bash
+$ docker-compose up -d
+```
+
+Ver más en [DOCKER.md](docs/DOCKER.md).
+
 
 ## Estado del proyecto
 
@@ -54,6 +68,7 @@ Si tenés alguna recomendación o bien podés abrir un issue, o mandar un mail a
 
 Si querés aportar código, dejé algunos issues que van desde errores a funciones nuevas para agregar a futuro. Agradezco si primero comentes si vas a trabajar en ese issue de forma de no hacer trabajo duplicado sin querer.
 Por favor:
+
 - Hacé un fork del repositorio
 - Creá tu branch desde `development`
 - Abrí el Pull Request apuntando a `development` (no a `main`)

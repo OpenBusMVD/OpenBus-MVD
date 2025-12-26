@@ -1,0 +1,8 @@
+.git
+.gitignore
+.gitattributes
+README.md
+demo.gif
+*.md
+.DS_Store
+.env
