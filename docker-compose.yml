@@ -1,0 +1,30 @@
+version: "3.8"
+
+services:
+  openbus-mvd:
+    build:
+      context: .
+      args:
+        - URL_SERVER=${URL_SERVER:-}
+        - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:8080}
+    container_name: openbus-mvd
+    ports:
+      - "8080:80"
+    environment:
+      - TZ=America/Montevideo
+    restart: unless-stopped
+    develop:
+      watch:
+        - action: sync
+          path: ./
+          target: /var/www/html/
+          ignore:
+            - .git/
+            - .gitignore
+            - .gitattributes
+            - demo.gif
+            - README.md
+            - DOCKER.md
+            - Dockerfile
+            - docker-compose.yml
+            - .dockerignore

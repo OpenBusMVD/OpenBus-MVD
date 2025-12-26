@@ -1,6 +1,7 @@
 <?php 
 
-	header("Access-Control-Allow-Origin: https://openbusmvd.github.io");
+	require_once __DIR__ . '/../config.php';
+	header("Access-Control-Allow-Origin: " . CORS_ORIGIN);
 	header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 	header("Access-Control-Allow-Headers: Content-Type");
 	header("Content-Type: application/json");
