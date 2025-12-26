@@ -51,7 +51,6 @@ $ docker-compose up -d
 
 Ver más en [DOCKER.md](docs/DOCKER.md).
 
-
 ## Estado del proyecto
 
 El proyecto se encuentra en fase activa de desarrollo.
