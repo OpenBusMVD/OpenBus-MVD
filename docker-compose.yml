@@ -24,7 +24,7 @@ services:
             - .gitattributes
             - demo.gif
             - README.md
-            - DOCKER.md
+            - docs/
             - Dockerfile
             - docker-compose.yml
             - .dockerignore
