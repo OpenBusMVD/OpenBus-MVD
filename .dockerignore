@@ -6,3 +6,5 @@ demo.gif
 *.md
 .DS_Store
 .env
+## archivo que se genera durante el build de Docker, no se debe subir ni aplicar cache durante el build
+js/config.js
