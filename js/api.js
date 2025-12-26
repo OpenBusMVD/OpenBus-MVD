@@ -19,6 +19,7 @@ export async function liveSearch(query, popupId, t1) {
 
     try {
         const response = await fetch(urlProxy + params);
+        //console.log(response);
         const json = await response.json();
 
         if (json.error || json === false) {

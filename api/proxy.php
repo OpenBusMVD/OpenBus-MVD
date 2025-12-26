@@ -1,206 +1,245 @@
 <?php
 
-    header("Access-Control-Allow-Origin: " . (getenv('CORS_ORIGIN') ?: 'https://openbusmvd.github.io'));
-    header("Access-Control-Allow-Methods: GET, OPTIONS");
-    header("Access-Control-Allow-Headers: Content-Type");
+header("Access-Control-Allow-Origin: " . (getenv('CORS_ORIGIN') ?: 'https://openbusmvd.github.io'));
+header("Access-Control-Allow-Methods: GET, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
 
-    if (!isset($_GET['action'])) {
-        http_response_code(400);
-        echo json_encode(["error" => "Falta parametro action"]);
-        exit;
+if (!isset($_GET['action'])) {
+    http_response_code(400);
+    echo json_encode(["error" => "Falta parametro action"]);
+    exit;
+}
+
+$dbPath = __DIR__ . '/../assets/data/buses.db';
+
+try {
+    $db = new PDO("sqlite:$dbPath");
+    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $db->exec('PRAGMA journal_mode = WAL;'); 
+} catch (PDOException $e) {
+    echo json_encode(["error" => "Error DB: " . $e->getMessage()]);
+    exit;
+}
+
+function minToHHMM(int $min): string {
+    $h = intdiv($min, 60) % 24;
+    $m = $min % 60;
+    return sprintf('%02d:%02d', $h, $m);
+}
+
+    // Busca el mejor viaje entre A y B para una Línea dada, después de cierta hora.
+function buscarTramo($db, $day, $idLinea, $idOrigen, $idDestino, $minHoraSalida) {
+
+    $stmt = $db->prepare("SELECT id_variante FROM lineas_variantes WHERE id_linea = ?");
+    $stmt->execute([$idLinea]);
+    $variantes = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+    if (empty($variantes)) return null;
+
+    $mejorOpcion = null;
+    $minLlegadaGlobal = 999999; 
+
+    foreach ($variantes as $vid) {
+        
+        // OBTENER ORDINALES (Para saber dirección y distancia)
+        // Buscamos un ejemplo cualquiera de esta variante en Origen y Destino para ver sus números de parada
+        $sqlOrd = "SELECT h.ordinal, h.id_parada 
+        FROM horarios h 
+        JOIN viajes v ON h.internal_id = v.internal_id
+        WHERE v.id_variante = ? AND h.id_parada IN (?, ?) 
+        GROUP BY h.id_parada";
+        
+        $stmt = $db->prepare($sqlOrd);
+        $stmt->execute([$vid, $idOrigen, $idDestino]);
+        $ordData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Debemos tener datos de ambas paradas
+        if (count($ordData) < 2) continue; 
+
+        $ordOrigen = 0;
+        $ordDestino = 0;
+        
+        foreach ($ordData as $o) {
+            if ($o['id_parada'] == $idOrigen) $ordOrigen = intval($o['ordinal']);
+            if ($o['id_parada'] == $idDestino) $ordDestino = intval($o['ordinal']);
+        }
+
+        if ($ordDestino <= $ordOrigen) continue;
+
+        // Calculamos cuánto tarda el bus en hacer esas paradas. Los directos van más rápidos
+        $lineasDirectas = array("D1","D5","D8","D9","D10","D11");
+        if(in_array($idLinea, $lineasDirectas)){
+            $minEstimado = ceil(($ordDestino - $ordOrigen) * 0.4);
+        }
+        else{
+            $minEstimado = ceil(($ordDestino - $ordOrigen) * 0.7);    
+        }
+
+        // BUSCAR SALIDAS (Próximos 3 buses)
+        $sql = "SELECT h.minutos 
+        FROM horarios h
+        JOIN viajes v ON h.internal_id = v.internal_id
+        WHERE v.tipo_dia = ? AND v.id_variante = ? AND h.id_parada = ? AND h.minutos >= ? 
+        ORDER BY h.minutos ASC LIMIT 3";
+        
+        $stmt = $db->prepare($sql);
+        $stmt->execute([$day, $vid, $idOrigen, $minHoraSalida]);
+        $salidas = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        if (empty($salidas)) continue;
+
+        foreach ($salidas as $minSalida) {
+            $minSalida = intval($minSalida);
+
+            if ($minSalida >= $minLlegadaGlobal) break;
+
+            $minBusquedaLlegada = $minSalida + $minEstimado;
+
+            $sqlDest = "SELECT h.minutos 
+            FROM horarios h
+            JOIN viajes v ON h.internal_id = v.internal_id
+            WHERE v.tipo_dia = ? AND v.id_variante = ? AND h.id_parada = ? AND h.minutos >= ?
+            ORDER BY h.minutos ASC LIMIT 1";
+            
+            $stmtDest = $db->prepare($sqlDest);
+            $stmtDest->execute([$day, $vid, $idDestino, $minBusquedaLlegada]);
+            $minLlegada = $stmtDest->fetchColumn();
+
+            if ($minLlegada) {
+                $minLlegada = intval($minLlegada);
+                
+                // Ajuste medianoche
+                if ($minLlegada < $minSalida) $minLlegada += 1440;
+
+                $duracion = $minLlegada - $minSalida;
+
+                // Si tarda más de 2.5 horas, probablemente agarró el bus del turno siguiente.
+                if ($duracion < 150) {
+                    if ($minLlegada < $minLlegadaGlobal) {
+                        $minLlegadaGlobal = $minLlegada;
+                        $mejorOpcion = [
+                            'minSalida' => $minSalida,
+                            'minLlegada' => $minLlegada,
+                            'duracion' => $duracion
+                        ];
+                    }
+                    // Si ya encontramos un viaje válido para esta salida, pasamos a la siguiente variante
+                    // (Asumimos que el primer bus que cumple las reglas es el correcto)
+                    break; 
+                }
+            }
+        }
     }
-
-    $dbPath = __DIR__ . '/../assets/data/buses.db';
-
-    try {
-        $db = new PDO("sqlite:$dbPath");
-        $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $db->exec('PRAGMA journal_mode = WAL;'); 
-    } catch (PDOException $e) {
-        echo json_encode(["error" => "Error DB: " . $e->getMessage()]);
-        exit;
-    }
-
-    function minToHHMM(int $min): string {
-        $h = intdiv($min, 60) % 24;
-        $m = $min % 60;
-        return sprintf('%02d:%02d', $h, $m);
-    }
+    return $mejorOpcion;
+}
 
 
-    function nextBuses($db, $idParada, $idLinea, $idBajada){
-        date_default_timezone_set('America/Montevideo');
-    
+function nextBuses($db, $idParada, $idLinea, $idBajada, $idTrasbordo, $trasbordoBajada, $idLinea2, $distSalida, $distLlegada, $distTrasbordo){
+    date_default_timezone_set('America/Montevideo');
     switch (date('N')) {
         case 6: $day = "2"; break;
         case 7: $day = "3"; break;
         default: $day = "1"; break;
     }
 
-    $stmt = $db->prepare("SELECT id_variante FROM lineas_variantes WHERE id_linea = ?");
-    $stmt->execute([$idLinea]);
-    $variantes = $stmt->fetchAll(PDO::FETCH_COLUMN);
-
-    if (empty($variantes)) return json_encode(["hora" => null, "mensaje" => "Línea s/d"]);
-
     $now = new DateTime("now");
-    $minsActual = (int)$now->format('H') * 60 + (int)$now->format('i');
+    $minAhora = (int)$now->format('H') * 60 + (int)$now->format('i');
 
-    $mejorCandidato = null;
-    $minimaEspera = 999999;
+    $minsCaminataInicial = ceil($distSalida / 70);
+    $minsCaminataTrasbordo = ceil($distTrasbordo / 70);
+    $minsCaminataFinal = ceil($distLlegada / 70);
 
-    foreach ($variantes as $vid) {
-        
-        // BUSCAR SUBIDA
-        $sql = "SELECT h.minutos, h.ordinal, v.internal_id 
-                FROM horarios h
-                JOIN viajes v ON h.internal_id = v.internal_id
-                WHERE v.tipo_dia = ? 
-                  AND v.id_variante = ? 
-                  AND h.id_parada = ? 
-                  AND h.minutos >= ? 
-                ORDER BY h.minutos ASC LIMIT 1";
-        
-        $stmt = $db->prepare($sql);
-        $stmt->execute([$day, $vid, $idParada, $minsActual]);
-        $busSubida = $stmt->fetch(PDO::FETCH_ASSOC);
+    // TRAMO 1
+    $minHoraBusqueda1 = $minAhora;
+    $destinoTramo1 = $idBajada;
+    
+    $tramo1 = buscarTramo($db, $day, $idLinea, $idParada, $destinoTramo1, $minHoraBusqueda1);
 
-        if (!$busSubida) continue;
+    if (!$tramo1) return json_encode(["mensaje" => "Sin servicio T1"]);
 
-        $minSalida = intval($busSubida['minutos']);
-        
-        // Si este bus sale MUCHO más tarde que un candidato que ya tenemos,
-        // ni siquiera vale la pena calcularle la bajada
-        if ($minSalida >= $minimaEspera + $minsActual) continue;
+    $horaSalida = minToHHMM($tramo1['minSalida']);
+    $horaBajada1 = minToHHMM($tramo1['minLlegada']);
+    $minutosSalida = $tramo1['duracion'];
+    
+    $restanteSalida = $tramo1['minSalida'] - $minAhora;
+    if ($restanteSalida < 0) $restanteSalida += 1440;
 
-        $horaSalidaStr = minToHHMM($minSalida);
-        $internalId = $busSubida['internal_id'];
-        $ordSubida = intval($busSubida['ordinal']);
+    // TRAMO 2
+    $horaTrasbordo = -1;
+    $minutosTrasbordo = -1;
+    $minFinViaje = $tramo1['minLlegada'];
 
-        $restante = $minSalida - $minsActual;
-        if ($restante < 0) $restante += 1440;
+    if ($idTrasbordo != -1 && $idLinea2) {
+        $minHoraBusqueda2 = $tramo1['minLlegada'] + 1; // 1 min buffer
+        $tramo2 = buscarTramo($db, $day, $idLinea2, $idTrasbordo, $trasbordoBajada, $minHoraBusqueda2);
 
-        // Si no hay bajada, este es un candidato válido
-        if ($idBajada === null) {
-            // Guardamos si es mejor que el anterior
-            if ($restante < $minimaEspera) {
-                $minimaEspera = $restante;
-                $mejorCandidato = [
-                    "hora" => $horaSalidaStr,
-                    "restante" => $restante,
-                    "minsTotales" => 0,
-                    "horaLlegada" => "Destino"
-                ];
-            }
-            continue;
-        }
+        if (!$tramo2) return json_encode(["mensaje" => "Sin servicio T2"]);
 
-        // BUSCAR BAJADA
-        $busBajada = null;
-        
-        // ID Exacto
-        $sql = "SELECT minutos FROM horarios 
-                WHERE internal_id = ? AND id_parada = ?";
-        $stmt = $db->prepare($sql);
-        $stmt->execute([$internalId, $idBajada]);
-        $busBajada = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        // Si falló el ID
-        if (!$busBajada) {
-
-            $sqlOrd = "SELECT ordinal FROM horarios 
-                       JOIN viajes ON horarios.internal_id = viajes.internal_id
-                       WHERE viajes.tipo_dia = ? AND viajes.id_variante = ? AND horarios.id_parada = ? LIMIT 1";
-            $stmt = $db->prepare($sqlOrd);
-            $stmt->execute([$day, $vid, $idBajada]);
-            $resOrd = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            if (!$resOrd) continue;
-            
-            $ordBajada = intval($resOrd['ordinal']);
-            if ($ordBajada <= $ordSubida) continue;
-
-            $diffParadas = $ordBajada - $ordSubida;
-            $minEstimado = $minSalida + ceil($diffParadas * 0.7);
-
-            $sql = "SELECT h.minutos 
-                    FROM horarios h
-                    JOIN viajes v ON h.internal_id = v.internal_id
-                    WHERE v.tipo_dia = ? 
-                      AND v.id_variante = ? 
-                      AND h.id_parada = ? 
-                      AND h.minutos >= ? 
-                    ORDER BY h.minutos ASC LIMIT 1";
-            
-            $stmt = $db->prepare($sql);
-            $stmt->execute([$day, $vid, $idBajada, $minEstimado]);
-            $busBajada = $stmt->fetch(PDO::FETCH_ASSOC);
-        }
-
-        if ($busBajada) {
-            $minLlegada = intval($busBajada['minutos']);
-            if ($minLlegada < $minSalida) $minLlegada += 1440;
-            
-            $duracion = $minLlegada - $minSalida;
-            $horaLlegadaStr = minToHHMM($minLlegada);
-
-            if ($duracion > 0) {
-                if ($restante < $minimaEspera) {
-                    $minimaEspera = $restante;
-                    $mejorCandidato = [
-                        "hora" => $horaSalidaStr,
-                        "restante" => $restante,
-                        "minutosTotales" => $duracion,
-                        "horaLlegada" => $horaLlegadaStr
-                    ];
-                }
-            }
-        }
+        $horaTrasbordo = minToHHMM($tramo2['minSalida']);
+        $minutosTrasbordo = $tramo2['duracion'];
+        $minFinViaje = $tramo2['minLlegada'];
     }
 
-    if ($mejorCandidato) {
-        return json_encode($mejorCandidato);
-    }
+    $horaLlegada = minToHHMM($minFinViaje);
+    $minLlegadaCasa = $minFinViaje + $minsCaminataFinal;
+    $minutosTotales = $minLlegadaCasa - $minAhora;
+    if ($minutosTotales < 0) $minutosTotales += 1440;
 
-    return json_encode(["hora" => null, "mensaje" => "Sin servicio"]);
-        
-        
-    }
+    $horaBajadaFinal = ($idTrasbordo == -1) ? -1 : $horaBajada1;
 
-    $action = $_GET['action'];
-    $baseIM = "http://www.montevideo.gub.uy/";
-    $url = "";
+    return json_encode([
+        "horaSalida" => $horaSalida,
+        "horaBajada" => $horaBajadaFinal,
+        "horaTrasbordo" => $horaTrasbordo,
+        "horaLlegada" => $horaLlegada,
+        "restanteSalida" => $restanteSalida,
+        "minutosSalida" => $minutosSalida,
+        "minutosTrasbordo" => $minutosTrasbordo,
+        "minutosTotales" => $minutosTotales
+    ]);
 
-    switch ($action) {
-        case 'lineas':
+}
+
+$action = $_GET['action'];
+$baseIM = "http://www.montevideo.gub.uy/";
+$url = "";
+
+switch ($action) {
+    case 'lineas':
             // Obtener líneas de una parada
             // Uso: proxy.php?action=lineas&id=1234
-            $p = $_GET['idParada'] ?? null;
-            $l = $_GET['idLinea'] ?? null;
-            $b = $_GET['idBajada'] ?? null;
-            if ($p && $l) echo nextBuses($db, $p, $l, $b);
-            else echo json_encode(["error" => "Faltan parametros"]);
-        break;
+    $p = $_GET['idParada'] ?? null;
+    $l = $_GET['idLinea'] ?? null;
+    $l2 = $_GET['idLinea2'] ?? null;
+    $b = $_GET['idBajada'] ?? null;
+    $t = $_GET['idTrasbordo'] ?? null;
+    $tb = $_GET['trasbordoBajada'] ?? null;
+    $distanciaSalida = $_GET['dSalida'];
+    $distanciaLlegada = $_GET['dLlegada'];
+    $distanciaTrasbordo = $_GET['dTrasbordo'];
+    if ($p && $l && $distanciaSalida && $distanciaLlegada) echo nextBuses($db, $p, $l, $b, $t, $tb, $l2, $distanciaSalida, $distanciaLlegada, $distanciaTrasbordo);
+    else echo json_encode(["error" => "Faltan parametros"]);
+    break;
 
-        case 'buscar_calle':
+    case 'buscar_calle':
             // Buscar calle por nombre
             // Uso: proxy.php?action=buscar_calle&q=Av+Italia
-        $q = urlencode($_GET['q']);
-        $url = $baseIM . "ubicacionesRest/calles/?nombre=" . $q;
-        break;
+    $q = urlencode($_GET['q']);
+    $url = $baseIM . "ubicacionesRest/calles/?nombre=" . $q;
+    break;
 
-        case 'buscar_cruce':
+    case 'buscar_cruce':
             // Buscar cruce (calle 2)
             // Uso: proxy.php?action=buscar_cruce&t1=123&q=Bulevar
-        $t1 = intval($_GET['t1']);
-        $q = urlencode($_GET['q']);
-        $url = $baseIM . "ubicacionesRest/cruces/" . $t1 . "/?nombre=" . $q;
-        break;
+    $t1 = intval($_GET['t1']);
+    $q = urlencode($_GET['q']);
+    $url = $baseIM . "ubicacionesRest/cruces/" . $t1 . "/?nombre=" . $q;
+    break;
 
-        case 'validar_puerta':
+    case 'validar_puerta':
             // Validar número de puerta
             // Uso: proxy.php?action=validar_puerta&t1=123&q=4500
-        $t1 = intval($_GET['t1']);
+    $t1 = intval($_GET['t1']);
             $q = intval($_GET['q']); // El número de puerta
             $url = $baseIM . "ubicacionesRest/direccion/" . $t1 . "/" . $q;
             break;
@@ -232,7 +271,7 @@
             http_response_code(400);
             echo json_encode(["error" => "Accion no valida"]);
             exit;
-    }  
+        }  
 
         if($url != ""){
             $response = @file_get_contents($url);
@@ -244,4 +283,4 @@
             }    
         }
         
-?>
+        ?>
