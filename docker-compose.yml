@@ -10,6 +10,8 @@ services:
       - "8080:80"
     environment:
       - TZ=America/Montevideo
+      - URL_SERVER=${URL_SERVER:-}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:8080}
     restart: unless-stopped
     develop:
       watch:

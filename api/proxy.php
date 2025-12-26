@@ -1,6 +1,6 @@
 <?php
-
-    header("Access-Control-Allow-Origin: " . (getenv('CORS_ORIGIN') ?: 'https://openbusmvd.github.io'));
+    $corsOrigin = getenv('CORS_ORIGIN') ?: 'https://openbusmvd.github.io';
+    header("Access-Control-Allow-Origin: " . $corsOrigin);
     header("Access-Control-Allow-Methods: GET, OPTIONS");
     header("Access-Control-Allow-Headers: Content-Type");
 
