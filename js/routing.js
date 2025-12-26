@@ -9,7 +9,7 @@ var salida, llegada;
 var omnibusLinea = L.geoJSON();
 
 // Variables UI Sidepanel (internas)
-var entradas;
+var entradas = []; // Array global del módulo para guardar las rutas ordenadas
 var markerSalidaBus = L.marker();
 var markerBajadaBus = L.marker();
 var markerTrasbordoBus = L.marker();
@@ -38,15 +38,13 @@ export function allRouting(coordsOrigin, coordsDestiny){
     markerSalida.remove();
     markerSalida = L.marker(salida, {icon: greenIcon}).addTo(map);
 
-    var indexSalida = 0;
     var totalSalida = [];
     for(var i = 0; i < state.markerStops.length; i++){
         if(!state.latlng[i]) continue;
         var parada = state.latlng[i];
         var distance = map.distance(salida, parada);
-        if(distance < 1500){
+        if(distance < 700){
             totalSalida.push({busID: state.markerStops[i].busStopID, distancia: distance});
-            indexSalida++;
         }
     }
 
@@ -62,7 +60,6 @@ export function allRouting(coordsOrigin, coordsDestiny){
     markerLlegada.remove();
     markerLlegada = L.marker(llegada, {icon: redIcon}).addTo(map);
     
-    var indexLlegada = 0;
     var totalLlegada = [];
     for(var i = 0; i < state.markerStops.length; i++){
          if(!state.latlng[i]) continue;
@@ -70,9 +67,10 @@ export function allRouting(coordsOrigin, coordsDestiny){
         var distance = map.distance(llegada,parada);
         if(distance < 500){
             totalLlegada.push({busID: state.markerStops[i].busStopID, distancia: distance});
-            indexLlegada++;
         }
     }
+
+    sidePanel_container.innerHTML = '<div style="padding:20px; text-align:center;">Calculando mejores rutas...</div>';
 
     fetch(urlServer + 'api/get2Routes_2.php', {
         method: 'POST',
@@ -81,12 +79,13 @@ export function allRouting(coordsOrigin, coordsDestiny){
     })
     .then(response => response.json())
     .then(data => handle2Routes(data, salida, llegada))
-    .catch(error => console.error('Error:', error.message));
+    .catch(error => {
+        console.error('Error:', error.message);
+        sidePanel_container.innerHTML = '<div style="padding:20px; text-align:center; color:red;">Error al calcular rutas.</div>';
+    });
 }
 
 async function handleLines(dataLineas, cSalida, cBajada, cTrasbordo, cLlegada) {
-    
-    // Carga de datos si no existen en memoria
     if (!recorridosCache) {
         try {
             const response = await fetch('assets/data/recorridos.geojson');
@@ -110,12 +109,8 @@ async function handleLines(dataLineas, cSalida, cBajada, cTrasbordo, cLlegada) {
     );
 
     if (featureSalida) {
-        // Se usan los argumentos cSalida/cBajada en vez de variables globales
-        // Turf usa lng,lat en vez de lat,lng como leaflet
         let startPt = turf.point([cSalida.lng, cSalida.lat]);
         let endPt = turf.point([cBajada.lng, cBajada.lat]);
-        
-        // Se recorta la linea con la libreria turf
         let sliceSalida = turf.lineSlice(startPt, endPt, featureSalida);
         
         sliceSalida.properties = { ...featureSalida.properties };
@@ -133,7 +128,6 @@ async function handleLines(dataLineas, cSalida, cBajada, cTrasbordo, cLlegada) {
         if (featureTrasbordo) {
             let startPtT = turf.point([cTrasbordo.lng, cTrasbordo.lat]);
             let endPtT = turf.point([cLlegada.lng, cLlegada.lat]);
-            
             let sliceTrasbordo = turf.lineSlice(startPtT, endPtT, featureTrasbordo);
             
             sliceTrasbordo.properties = { ...featureTrasbordo.properties };
@@ -164,8 +158,11 @@ async function handleLines(dataLineas, cSalida, cBajada, cTrasbordo, cLlegada) {
 
 function handleUISearch(routeId){
     let id = parseInt(routeId);
-    let salidaId = entradas[id][1].salida.idParada;
-    let bajadaId = entradas[id][1].salida.idBajada;
+    
+    let rutaSeleccionada = entradas[id][1]; 
+
+    let salidaId = rutaSeleccionada.salida.idParada;
+    let bajadaId = rutaSeleccionada.salida.idBajada;
     
     markerSalidaBus.remove();
     markerBajadaBus.remove();
@@ -194,9 +191,9 @@ function handleUISearch(routeId){
         addWaypoints: false, draggableWaypoints: false, fitSelectedRoutes: false, show: false
     }).addTo(map);
 
-    if(entradas[id][1].trasbordo.length != 0){
-        let trasbordoId = entradas[id][1].trasbordo.idParada;
-        let llegadaId = entradas[id][1].trasbordo.idBajada;
+    if(rutaSeleccionada.trasbordo.length != 0){
+        let trasbordoId = rutaSeleccionada.trasbordo.idParada;
+        let llegadaId = rutaSeleccionada.trasbordo.idBajada;
         markerTrasbordoBus = state.markerStops.find(item => item && item.busStopID === trasbordoId);
         coordsTrasbordoBus = markerTrasbordoBus._latlng;
         markerLlegadaBus = state.markerStops.find(item => item && item.busStopID === llegadaId); 
@@ -232,153 +229,126 @@ function handleUISearch(routeId){
 
     markerSalidaBus.addTo(map);
     markerBajadaBus.addTo(map);
-    handleLines(entradas[id][1], coordsSalidaBus, coordsBajadaBus, coordsTrasbordoBus, coordsLlegadaBus); 
+    handleLines(rutaSeleccionada, coordsSalidaBus, coordsBajadaBus, coordsTrasbordoBus, coordsLlegadaBus); 
 }
 
-async function updateBusTimes() {
-    // Seleccionamos todos los elementos que tienen los datos guardados
-    const elements = document.querySelectorAll('.duration[data-parada]');
-
-    elements.forEach(async (el) => {
-        const idParada = el.dataset.parada;
-        const idLinea = el.dataset.linea;
-        const idBajada = el.dataset.bajada;
-        const index = el.dataset.index;
+async function handle2Routes(data, salida, llegada){
+    let rawEntradas = Object.entries(data);
+    
+    const promises = rawEntradas.map(async (entry) => {
+        const routeData = entry[1];
         
-        const timeElement = document.getElementById(`time-${index}`);
-        const travelElement = document.getElementById(`travel-${index}`)
-        const durationElement = el;
+        let pId = routeData.salida.idParada;
+        let lId = routeData.salida.idLinea;
+        let bId = routeData.salida.idBajada;
+        let tId = -1;
+        let dSalida = routeData.salida.distanciaSalida;
+        let dLlegada = routeData.salida.distanciaLlegada;
+        let dTrasbordo = -1;
+        let l2Id = -1;
+        let idtrasbordoBajada = -1;
 
-        durationElement.style.visibility = 'visible';
-        timeElement.style.visibility = 'visible';
-        travelElement.style.visibility = 'visible';
+        if(routeData.trasbordo.length != 0){
+            dLlegada = routeData.trasbordo.distanciaDestino;
+            dTrasbordo = routeData.trasbordo.distanciaTrasbordo;
+            l2Id = routeData.trasbordo.idLinea;
+            tId = routeData.trasbordo.idParada;
+            idtrasbordoBajada = routeData.trasbordo.idBajada;
+        }
 
         try {
-            const url = `${urlServer}api/proxy.php?action=lineas&idParada=${idParada}&idLinea=${idLinea}&idBajada=${idBajada}`;
+            const url = `${urlServer}api/proxy.php?action=lineas&idParada=${pId}&idLinea=${lId}&idBajada=${bId}&idTrasbordo=${tId}&trasbordoBajada=${idtrasbordoBajada}&idLinea2=${l2Id}&dSalida=${dSalida}&dLlegada=${dLlegada}&dTrasbordo=${dTrasbordo}`;
             
             const response = await fetch(url);
+            console.log(response);
+            const timeData = await response.json();
             
-            const data = await response.json();
-            //console.log(data);
-
-            if (data.hora) {
-                let textoDuracion = "";
-                if (data.minutosTotales > 0) {
-                    textoDuracion = `${data.minutosTotales} min`;
-                } else {
-                    // Fallback si falla el cálculo de bajada
-                    textoDuracion = "En camino"; 
-                }
-                
-                durationElement.textContent = `${data.restante} min`;
-
-                let horaLlegada = data.horaLlegada !== "??:??" ? data.horaLlegada : "Destino";
-                timeElement.textContent = `${data.hora} — ${horaLlegada}`;
-                travelElement.textContent = `${data.minutosTotales} min`
-                
-                if(data.restante < 5) durationElement.style.color = "#d32f2f";
-
-            } else {
-                document.getElementById(index).style.display = 'none';
+            if (timeData.horaSalida) {
+                return {
+                    original: entry,
+                    times: timeData
+                };
             }
-
-        } catch (error) {
-            console.error("Error fetching times:", error);
-            // Ocultar en caso de error
-            durationElement.style.visibility = 'hidden';
-            timeElement.style.visibility = 'hidden';
-            travelElement.style.visibility = 'hidden';
+            return null;
+        } catch (e) {
+            console.error(e);
+            return null;
         }
     });
-}
 
-function handle2Routes(data, salida, llegada){
-    console.log(data);
-    entradas = Object.entries(data);
+    const results = await Promise.all(promises);
+
+    const validResults = results.filter(r => r !== null);
+
+    validResults.sort((a, b) => a.times.minutosTotales - b.times.minutosTotales);
+
+    // SELECCIONAR TOP 10
+    const top10 = validResults.slice(0, 10);
+
+    entradas = top10.map(item => item.original); 
+
     sidePanel_container.innerHTML = '';
 
-    entradas.sort((a, b) => {
-        let a_trasbordo, a_llegada, b_trasbordo, b_llegada;
-        if(a[1].trasbordo.length != 0){
-            a_trasbordo = a[1].trasbordo.distanciaTrasbordo;
-            a_llegada = a[1].trasbordo.distanciaDestino;
-        } else {
-            a_trasbordo = 0;
-            a_llegada = a[1].salida.distanciaLlegada;
-        }
-        if(b[1].trasbordo.length != 0){
-            b_trasbordo = b[1].trasbordo.distanciaTrasbordo;
-            b_llegada = b[1].trasbordo.distanciaDestino;
-        } else {
-            b_trasbordo = 0;
-            b_llegada = b[1].salida.distanciaLlegada;
-        }
-        const distA = a[1].salida.distanciaSalida + a_trasbordo + a_llegada;
-        const distB = b[1].salida.distanciaSalida + b_trasbordo + b_llegada;
-        return distA - distB;
-    });
+    if (top10.length === 0) {
+        sidePanel_container.innerHTML = '<div style="padding:20px; text-align:center;">No se encontraron servicios disponibles en este momento.</div>';
+        return;
+    }
 
-    let i = 0;
-    while(entradas[i] !== undefined){ // Si quiero limitar puedo poner i < X
+    top10.forEach((item, i) => {
+        const routeData = item.original[1];
+        const timeData = item.times;
+
         var omnibus = document.createElement('div');
         omnibus.className = 'route';
         if(i == 0) omnibus.classList.add('selected');
         omnibus.id = i;
 
-        let timeId = `time-${i}`;
-        let durationId = `duration-${i}`;
-        let travelId = `travel-${i}`;
-        
-        let pId = entradas[i][1].salida.idParada;
-        let lId = entradas[i][1].salida.idLinea;
-        let bId = entradas[i][1].salida.idBajada;
-
         let color;
-        if(lineas_ucot.includes(entradas[i][1].salida.idLinea.toString())) color = "bus-yellow";
-        else if(lineas_coetc.includes(entradas[i][1].salida.idLinea.toString())) color = "bus-red";
-        else if(lineas_come.includes(entradas[i][1].salida.idLinea.toString())) color = "bus-green";
+        if(lineas_ucot.includes(routeData.salida.idLinea.toString())) color = "bus-yellow";
+        else if(lineas_coetc.includes(routeData.salida.idLinea.toString())) color = "bus-red";
+        else if(lineas_come.includes(routeData.salida.idLinea.toString())) color = "bus-green";
         else color = "bus-blue";
 
-        let htmlContent = '';
-        
+        let horaInfo = (timeData.horaBajada == -1) 
+            ? `${timeData.horaSalida} — ${timeData.horaLlegada}` 
+            : `${timeData.horaSalida} — ${timeData.horaBajada} / ${timeData.horaTrasbordo} — ${timeData.horaLlegada}`;
+
+        // Color de duración si falta poco
+        let durStyle = (timeData.restanteSalida < 5) ? 'style="color:#d32f2f;"' : '';
+
         let headerInfo = `
-            <p class="time" id="${timeId}">--:--</p>
-            <p class="duration" id="${durationId}"
-               data-parada="${pId}" 
-               data-linea="${lId}"
-               data-bajada="${bId}" 
-               data-index="${i}">Cargando...</p>
-            <p class="travel" id="${travelId}"</p>
+            <p class="time">${horaInfo}</p>
+            <p class="duration" ${durStyle}>${timeData.restanteSalida} min</p>
+            <p class="travel">${timeData.minutosTotales} min</p>
         `;
 
-        if(entradas[i][1].trasbordo.length != 0){
+        let htmlContent = "";
+
+        if(routeData.trasbordo.length != 0){
             let colorTrasbordo;
-            if(lineas_ucot.includes(entradas[i][1].trasbordo.idLinea.toString())) colorTrasbordo = "bus-yellow";
-            else if(lineas_coetc.includes(entradas[i][1].trasbordo.idLinea.toString())) colorTrasbordo = "bus-red";
-            else if(lineas_come.includes(entradas[i][1].trasbordo.idLinea.toString())) colorTrasbordo = "bus-green";
+            if(lineas_ucot.includes(routeData.trasbordo.idLinea.toString())) colorTrasbordo = "bus-yellow";
+            else if(lineas_coetc.includes(routeData.trasbordo.idLinea.toString())) colorTrasbordo = "bus-red";
+            else if(lineas_come.includes(routeData.trasbordo.idLinea.toString())) colorTrasbordo = "bus-green";
             else colorTrasbordo = "bus-blue";
 
             htmlContent = headerInfo + `
             <div class="bus-icons">
-                <h3 class="${color}">${entradas[i][1].salida.idLinea}</h3> 
+                <h3 class="${color}">${routeData.salida.idLinea}</h3> 
                 <div class="line"></div>
-                <h3 class="${colorTrasbordo}">${entradas[i][1].trasbordo.idLinea}</h3> 
+                <h3 class="${colorTrasbordo}">${routeData.trasbordo.idLinea}</h3> 
             </div>`;
         } else {
             htmlContent = headerInfo + `
             <div class="bus-icons">
-                <h3 class="${color}">${entradas[i][1].salida.idLinea}</h3> 
+                <h3 class="${color}">${routeData.salida.idLinea}</h3> 
             </div>`;
         }
         
         omnibus.innerHTML = htmlContent;
         sidePanel_container.appendChild(omnibus);
-        i++;
-    }
+    });
 
     handleUISearch(0);
-
-    updateBusTimes(); 
 }
 
 sidePanel_container.addEventListener('click', (event) => {
