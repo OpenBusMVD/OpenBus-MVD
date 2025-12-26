@@ -28,19 +28,16 @@ RUN echo "// Configuración generada durante el build de Docker" > /var/www/html
     echo "    corsOrigin: \"${CORS_ORIGIN}\"" >> /var/www/html/js/config.js && \
     echo "};" >> /var/www/html/js/config.js
 
-# Generar archivo de configuración PHP
-RUN echo "<?php" > /var/www/html/config.php && \
-    echo "// Configuración generada durante el build de Docker" >> /var/www/html/config.php && \
-    echo "define('CORS_ORIGIN', '${CORS_ORIGIN}');" >> /var/www/html/config.php && \
-    echo "define('URL_SERVER', '${URL_SERVER}');" >> /var/www/html/config.php && \
-    echo "?>" >> /var/www/html/config.php
-
 # Establecer permisos correctos
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html
 
 # Exponer puerto 80
 EXPOSE 80
+
+# Variables de entorno disponibles en runtime
+ENV CORS_ORIGIN=${CORS_ORIGIN}
+ENV URL_SERVER=${URL_SERVER}
 
 # Comando por defecto
 CMD ["apache2-foreground"]
