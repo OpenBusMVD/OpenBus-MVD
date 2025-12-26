@@ -37,7 +37,7 @@ export const state = {
 export const sidePanel = document.getElementById('sidePanel');
 export const toggleBtn = document.getElementById('toggleBtn');
 export const sidePanel_container = document.getElementById('omnibus_container');
-export const urlServer = "https://gdsongverifier.alwaysdata.net/openbus/" // = "" para correr de forma local
+export const urlServer = window.CONFIG?.urlServer || ""
 
 export const domElements = {
     popUp1: document.getElementById("popupOrigin1"),
