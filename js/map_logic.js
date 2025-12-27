@@ -60,19 +60,24 @@ var popUpStop;
 async function onClick(e) {
     state.clickedMarkers.clearLayers();
     
-    let textInfo = "<b>Líneas:</b> ";
+    let textInfo = "";
+    let textLineas = "<b>Líneas:</b> ";
+    let textHorarios = "<b>Próximos buses:</b><br>";
     
     try {
-        const response = await fetch(urlServer+`api/proxy.php?action=lineas&idParada=${e.target.busStopID}`);
+        const response = await fetch(urlServer+`api/proxy.php?action=proximos&idParada=${e.target.busStopID}`);
+        //console.log(response);
         const data = await response.json();
         
-        if (data.lineas) {
-            const lineasStr = data.lineas.map(l => l.descripcion).join(", ");
-            textInfo += lineasStr;
+        if (data) {
+            textLineas = data.lineas.join(", "); 
+            data.proximos.forEach((info) => {
+                textHorarios += info.restante + "' | " + info.linea + " | " + info.hora + "<br>";
+            });
         } else {
             textInfo += "Sin información";
         }
-        textInfo += "<br>";
+        textInfo = textLineas + "<br><br>" + textHorarios;
         popupVariable(e.target.myID, textInfo, e.target.busStopID);
 
     } catch (error) {
@@ -82,21 +87,20 @@ async function onClick(e) {
 }
 
 function popupVariable(varPop, text, busID){
-    popVar = varPop;
     clicked = false;
-    state.clickedMarkers.addLayer(state.markerStops[popVar]);
-    state.shelterMarkers.removeLayer(state.markerStops[popVar]);
+    state.clickedMarkers.addLayer(state.markerStops[varPop]);
+    state.shelterMarkers.removeLayer(state.markerStops[varPop]);
     map.addLayer(state.clickedMarkers);
     map.removeLayer(state.shelterMarkers);
 
     if(popUpStop === undefined || popUpStop.isPopupOpen() == false){
-        popUpStop = state.markerStops[popVar].bindPopup("<b>Parada número: "+busID+"</b><br>"+text).openPopup();
+        popUpStop = state.markerStops[varPop].bindPopup("<b>Parada número: "+busID+"</b><br>"+text).openPopup();
     }
 
-    state.markerStops[popVar].getPopup().on('remove', function() {
+    state.markerStops[varPop].getPopup().on('remove', function() {
         clicked = false;
-        state.clickedMarkers.removeLayer(state.markerStops[popVar]);
-        state.shelterMarkers.addLayer(state.markerStops[popVar]);
+        state.clickedMarkers.removeLayer(state.markerStops[varPop]);
+        state.shelterMarkers.addLayer(state.markerStops[varPop]);
         map.removeLayer(state.clickedMarkers);
         map.removeLayer(state.busesMarkers);
         if (map.getZoom() >= 17){   

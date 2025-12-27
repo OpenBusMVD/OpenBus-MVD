@@ -200,87 +200,180 @@ function nextBuses($db, $idParada, $idLinea, $idBajada, $idTrasbordo, $trasbordo
 
 }
 
+function proximosBuses($db, $idParada) {
+    date_default_timezone_set('America/Montevideo');
+
+    switch (date('N')) {
+        case 6: $day = "2"; break;
+        case 7: $day = "3"; break;
+        default: $day = "1"; break;
+    }
+
+    $now = new DateTime("now");
+    $minsActual = (int)$now->format('H') * 60 + (int)$now->format('i');
+
+    // Hacemos un JOIN con lineas_variantes para saber el nombre de la línea ya mismo
+    // Se usa DISTINCT para no repetir si una variante pasa 20 veces
+    $sql = "SELECT DISTINCT v.id_variante, l.id_linea
+            FROM horarios h
+            JOIN viajes v ON h.internal_id = v.internal_id
+            JOIN lineas_variantes l ON v.id_variante = l.id_variante
+            WHERE h.id_parada = ? AND v.tipo_dia = ?";
+    
+    $stmt = $db->prepare($sql);
+    $stmt->execute([$idParada, $day]);
+    $variantes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    if (empty($variantes)) return json_encode(["mensaje" => "Sin servicios hoy"]);
+
+    $candidatos = [];
+
+    $listaLineasUnicas = [];
+
+    // Buscar próximo bus para CADA variante
+    foreach ($variantes as $row) {
+        $vid = $row['id_variante'];
+        $linea = $row['id_linea'];
+
+        if (!in_array($linea, $listaLineasUnicas)) {
+            $listaLineasUnicas[] = $linea;
+        }
+
+        // Buscamos el PRIMER horario futuro de esta variante
+        $sqlNext = "SELECT h.minutos 
+                    FROM horarios h
+                    JOIN viajes v ON h.internal_id = v.internal_id
+                    WHERE v.tipo_dia = ? AND v.id_variante = ? AND h.id_parada = ? AND h.minutos >= ?
+                    ORDER BY h.minutos ASC LIMIT 1";
+        
+        $stmtNext = $db->prepare($sqlNext);
+        $stmtNext->execute([$day, $vid, $idParada, $minsActual]);
+        $bus = $stmtNext->fetch(PDO::FETCH_ASSOC);
+
+        if ($bus) {
+            $minLlegada = intval($bus['minutos']);
+            $restante = $minLlegada - $minsActual;
+            
+            // Guardamos candidato
+            $candidatos[] = [
+                'linea' => $linea,
+                'hora' => minToHHMM($minLlegada),
+                'restante' => $restante,
+                'minutos_abs' => $minLlegada // Para ordenar
+            ];
+        }
+    }
+
+    // Orden por quien llega antes
+    usort($candidatos, function($a, $b) {
+        return $a['minutos_abs'] - $b['minutos_abs'];
+    });
+
+    natsort($listaLineasUnicas);
+    $listaLineasUnicas = array_values($listaLineasUnicas);
+
+    // Se agarran como maximo los proximos 10
+    $resultado = array_slice($candidatos, 0, 10);
+
+    foreach ($resultado as &$r) {
+        unset($r['minutos_abs']);
+    }
+
+    return json_encode([
+        "lineas" => $listaLineasUnicas,
+        "proximos" => $resultado
+    ]);
+}
+
 $action = $_GET['action'];
 $baseIM = "http://www.montevideo.gub.uy/";
 $url = "";
 
 switch ($action) {
     case 'lineas':
-            // Obtener líneas de una parada
-            // Uso: proxy.php?action=lineas&id=1234
-    $p = $_GET['idParada'] ?? null;
-    $l = $_GET['idLinea'] ?? null;
-    $l2 = $_GET['idLinea2'] ?? null;
-    $b = $_GET['idBajada'] ?? null;
-    $t = $_GET['idTrasbordo'] ?? null;
-    $tb = $_GET['trasbordoBajada'] ?? null;
-    $distanciaSalida = $_GET['dSalida'];
-    $distanciaLlegada = $_GET['dLlegada'];
-    $distanciaTrasbordo = $_GET['dTrasbordo'];
-    if ($p && $l && $distanciaSalida && $distanciaLlegada) echo nextBuses($db, $p, $l, $b, $t, $tb, $l2, $distanciaSalida, $distanciaLlegada, $distanciaTrasbordo);
-    else echo json_encode(["error" => "Faltan parametros"]);
+        // Obtener líneas de una parada
+        // Uso: proxy.php?action=lineas&id=1234
+        $p = $_GET['idParada'] ?? null;
+        $l = $_GET['idLinea'] ?? null;
+        $l2 = $_GET['idLinea2'] ?? null;
+        $b = $_GET['idBajada'] ?? null;
+        $t = $_GET['idTrasbordo'] ?? null;
+        $tb = $_GET['trasbordoBajada'] ?? null;
+        $distanciaSalida = $_GET['dSalida'];
+        $distanciaLlegada = $_GET['dLlegada'];
+        $distanciaTrasbordo = $_GET['dTrasbordo'];
+        if ($p && $l && $distanciaSalida && $distanciaLlegada) echo nextBuses($db, $p, $l, $b, $t, $tb, $l2, $distanciaSalida, $distanciaLlegada, $distanciaTrasbordo);
+        else echo json_encode(["error" => "Faltan parametros"]);
+    break;
+
+    case 'proximos':
+        // Obtener proximos buses de una parada y todas sus lineas
+        // Uso: proxy.php?action=proximos&id=1234
+        $p = $_GET['idParada'] ?? null;
+        if($p) echo proximosBuses($db, $p);
+        else echo json_encode(["error" => "Faltan parametros"]);
     break;
 
     case 'buscar_calle':
-            // Buscar calle por nombre
-            // Uso: proxy.php?action=buscar_calle&q=Av+Italia
-    $q = urlencode($_GET['q']);
-    $url = $baseIM . "ubicacionesRest/calles/?nombre=" . $q;
+        // Buscar calle por nombre
+        // Uso: proxy.php?action=buscar_calle&q=Av+Italia
+        $q = urlencode($_GET['q']);
+        $url = $baseIM . "ubicacionesRest/calles/?nombre=" . $q;
     break;
 
     case 'buscar_cruce':
-            // Buscar cruce (calle 2)
-            // Uso: proxy.php?action=buscar_cruce&t1=123&q=Bulevar
-    $t1 = intval($_GET['t1']);
-    $q = urlencode($_GET['q']);
-    $url = $baseIM . "ubicacionesRest/cruces/" . $t1 . "/?nombre=" . $q;
+        // Buscar cruce (calle 2)
+        // Uso: proxy.php?action=buscar_cruce&t1=123&q=Bulevar
+        $t1 = intval($_GET['t1']);
+        $q = urlencode($_GET['q']);
+        $url = $baseIM . "ubicacionesRest/cruces/" . $t1 . "/?nombre=" . $q;
     break;
 
     case 'validar_puerta':
-            // Validar número de puerta
-            // Uso: proxy.php?action=validar_puerta&t1=123&q=4500
-    $t1 = intval($_GET['t1']);
-            $q = intval($_GET['q']); // El número de puerta
-            $url = $baseIM . "ubicacionesRest/direccion/" . $t1 . "/" . $q;
-            break;
+        // Validar número de puerta
+        // Uso: proxy.php?action=validar_puerta&t1=123&q=4500
+        $t1 = intval($_GET['t1']);
+        $q = intval($_GET['q']); // El número de puerta
+        $url = $baseIM . "ubicacionesRest/direccion/" . $t1 . "/" . $q;
+    break;
 
-            case 'coords_cruce':
-            // Coordenadas de un cruce simple
-            // Uso: proxy.php?action=coords_cruce&id=1234
-            $id = intval($_GET['id']);
-            $url = $baseIM . "ubicacionesRest/cruces/" . $id;
-            break;
+    case 'coords_cruce':
+        // Coordenadas de un cruce simple
+        // Uso: proxy.php?action=coords_cruce&id=1234
+        $id = intval($_GET['id']);
+        $url = $baseIM . "ubicacionesRest/cruces/" . $id;
+    break;
 
-            case 'coords_esquina':
-            // Coordenadas exactas de esquina entre dos calles
-            // Uso: proxy.php?action=coords_esquina&id1=123&id2=456
-            $id1 = intval($_GET['id1']);
-            $id2 = intval($_GET['id2']);
-            $url = $baseIM . "ubicacionesRest/esquina/" . $id1 . "/" . $id2;
-            break;
+    case 'coords_esquina':
+        // Coordenadas exactas de esquina entre dos calles
+        // Uso: proxy.php?action=coords_esquina&id1=123&id2=456
+        $id1 = intval($_GET['id1']);
+        $id2 = intval($_GET['id2']);
+        $url = $baseIM . "ubicacionesRest/esquina/" . $id1 . "/" . $id2;
+    break;
 
-            case 'coords_direccion':
-            // Coordenadas de una dirección (puerta)
-            // Uso: proxy.php?action=coords_direccion&id1=123&puerta=4500
-            $id1 = intval($_GET['id1']);
-            $puerta = intval($_GET['puerta']);
-            $url = $baseIM . "ubicacionesRest/direccion/" . $id1 . "/" . $puerta;
-            break;
+    case 'coords_direccion':
+        // Coordenadas de una dirección (puerta)
+        // Uso: proxy.php?action=coords_direccion&id1=123&puerta=4500
+        $id1 = intval($_GET['id1']);
+        $puerta = intval($_GET['puerta']);
+        $url = $baseIM . "ubicacionesRest/direccion/" . $id1 . "/" . $puerta;
+    break;
 
-            default:
-            http_response_code(400);
-            echo json_encode(["error" => "Accion no valida"]);
-            exit;
-        }  
+    default:
+        http_response_code(400);
+        echo json_encode(["error" => "Accion no valida"]);
+    exit;
+}  
 
-        if($url != ""){
-            $response = @file_get_contents($url);
+if($url != ""){
+    $response = @file_get_contents($url);
 
-            if ($response === FALSE) {
-                echo json_encode(["error" => "No encontrado o error externo", "found" => false]);
-            } else {
-                echo $response;
-            }    
-        }
-        
-        ?>
+    if ($response === FALSE) {
+        echo json_encode(["error" => "No encontrado o error externo", "found" => false]);
+    } else {
+        echo $response;
+    }    
+}
+
+?>
