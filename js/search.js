@@ -1,4 +1,4 @@
-import { domElements, state } from './globals.js';
+import { domElements, state, bottomPanel_container, resultsList, searchPanel } from './globals.js';
 import { liveSearch, getCoordinates } from './api.js';
 import { allRouting } from './routing.js';
 
@@ -16,14 +16,8 @@ let timeoutOrigin1, timeoutOrigin2, timeoutDestiny1, timeoutDestiny2;
 
 export function initSearchListeners() {
 
-    // --- ORIGEN 1 ---
-    originSearch1.addEventListener("focus", function (e) {
-        document.querySelectorAll('.popup').forEach(p => p.classList.remove('active'));
-        popUp1.classList.add('active');
-    });
-
-    popUp1.addEventListener('click', (e) => {
-        if (e.target.classList.contains('popup-item')) {
+    resultsList.addEventListener('click', (e) => {
+        if (e.target.classList.contains('popup-origin1')) {
             chosenOrigin1 = true;
             originSearch2.disabled = false;
             let chosenNameOrigin1 = e.target.textContent;
@@ -32,59 +26,14 @@ export function initSearchListeners() {
             originSearch1.setAttribute('codigo', chosenCodeOrigin1);
             checkSearchButton();
         }
-    });
-
-    originSearch1.addEventListener("keyup", function (e) {
-        clearTimeout(timeoutOrigin1);
-        timeoutOrigin1 = setTimeout(() => {
-            chosenOrigin1 = false;
-            originSearch2.disabled = true;
-            popUp1.innerHTML = '';
-            var inputVal = e.target.value;
-            if(inputVal.length !== 0){
-                liveSearch(inputVal, "popupOrigin1", null);
-            }
-        }, 300);
-    });
-
-    // --- ORIGEN 2 ---
-    originSearch2.addEventListener("focus", function (e) {
-        document.querySelectorAll('.popup').forEach(p => p.classList.remove('active'));
-        popUp2.classList.add('active');
-    });
-
-    popUp2.addEventListener('click', (e) => {
-        if (e.target.classList.contains('popup-item')) {
+        else if(e.target.classList.contains('popup-origin2')){
             chosenOrigin2 = true;
             let chosenNameOrigin2 = e.target.textContent;
             let chosenCodeOrigin2 = e.target.getAttribute("codigo");
             originSearch2.setAttribute('codigo', chosenCodeOrigin2);
             originSearch2.value = chosenNameOrigin2;
         }
-    });
-
-    originSearch2.addEventListener("keyup", function (e) {
-        clearTimeout(timeoutOrigin2);
-        timeoutOrigin2 = setTimeout(() => {
-            popUp2.innerHTML = '';
-            var inputVal = e.target.value;
-            if(inputVal.length !== 0 && originSearch2.disabled === false){
-                let t1 = originSearch1.getAttribute("codigo");
-                liveSearch(inputVal, "popupOrigin2", t1);
-            } else {
-                originSearch2.removeAttribute("codigo");
-            }
-        }, 300);
-    });
-
-    // --- DESTINO 1 ---
-    destinySearch1.addEventListener("focus", function (e) {
-        document.querySelectorAll('.popup').forEach(p => p.classList.remove('active'));
-        popUp3.classList.add('active');
-    });
-
-    popUp3.addEventListener('click', (e) => {
-        if (e.target.classList.contains('popup-item')) {
+        else if(e.target.classList.contains('popup-destiny1')){
             chosenDestiny1 = true;
             destinySearch2.disabled = false;
             let chosenNameDestiny1 = e.target.textContent;
@@ -93,29 +42,7 @@ export function initSearchListeners() {
             destinySearch1.setAttribute('codigo', chosenCodeDestiny1);
             checkSearchButton();
         }
-    });
-
-    destinySearch1.addEventListener("keyup", function (e) {
-        clearTimeout(timeoutDestiny1);
-        timeoutDestiny1 = setTimeout(() => {
-            chosenDestiny1 = false;
-            destinySearch2.disabled = true;
-            popUp3.innerHTML = '';
-            var inputVal = e.target.value;
-            if(inputVal.length !== 0){
-                liveSearch(inputVal, "popupDestiny1", null);
-            }
-        }, 300);
-    });
-
-    // --- DESTINO 2 ---
-    destinySearch2.addEventListener("focus", function (e) {
-        document.querySelectorAll('.popup').forEach(p => p.classList.remove('active'));
-        popUp4.classList.add('active');
-    });
-
-    popUp4.addEventListener('click', (e) => {
-        if (e.target.classList.contains('popup-item')) {
+        else if(e.target.classList.contains('popup-destiny2')){
             chosenDestiny2 = true;
             let chosenNameDestiny2 = e.target.textContent;
             let chosenCodeDestiny2 = e.target.getAttribute("codigo");
@@ -124,24 +51,58 @@ export function initSearchListeners() {
         }
     });
 
-    destinySearch2.addEventListener("keyup", function (e) {
-        clearTimeout(timeoutDestiny2);
-        timeoutDestiny2 = setTimeout(() => {
-            popUp4.innerHTML = '';
+    originSearch1.addEventListener("keyup", function (e) {
+        clearTimeout(timeoutOrigin1);
+        timeoutOrigin1 = setTimeout(() => {
+            chosenOrigin1 = false;
+            originSearch2.disabled = true;
+            resultsList.innerHTML = '';
             var inputVal = e.target.value;
             if(inputVal.length !== 0){
-                let t1 = destinySearch1.getAttribute("codigo");
-                liveSearch(inputVal, "popupDestiny2", t1);
-            } else {
-                destinySearch2.removeAttribute("codigo");
+                liveSearch(inputVal, null, "origin1");
             }
         }, 300);
     });
 
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.search-box')) {
-            document.querySelectorAll('.popup').forEach(p => p.classList.remove('active'));
-        }
+    originSearch2.addEventListener("keyup", function (e) {
+        clearTimeout(timeoutOrigin2);
+        timeoutOrigin2 = setTimeout(() => {
+            resultsList.innerHTML = '';
+            var inputVal = e.target.value;
+            if(inputVal.length !== 0 && originSearch2.disabled === false){
+                let t1 = originSearch1.getAttribute("codigo");
+                liveSearch(inputVal, t1, "origin2");
+            } else {
+                originSearch2.removeAttribute("codigo");
+            }
+        }, 300);
+    });
+
+    destinySearch1.addEventListener("keyup", function (e) {
+        clearTimeout(timeoutDestiny1);
+        timeoutDestiny1 = setTimeout(() => {
+            chosenDestiny1 = false;
+            destinySearch2.disabled = true;
+            resultsList.innerHTML = '';
+            var inputVal = e.target.value;
+            if(inputVal.length !== 0){
+                liveSearch(inputVal, null, "destiny1");
+            }
+        }, 300);
+    });
+
+    destinySearch2.addEventListener("keyup", function (e) {
+        clearTimeout(timeoutDestiny2);
+        timeoutDestiny2 = setTimeout(() => {
+            resultsList.innerHTML = '';
+            var inputVal = e.target.value;
+            if(inputVal.length !== 0){
+                let t1 = destinySearch1.getAttribute("codigo");
+                liveSearch(inputVal, t1, "destiny2");
+            } else {
+                destinySearch2.removeAttribute("codigo");
+            }
+        }, 300);
     });
 
     // --- BOTÓN DE BÚSQUEDA ---
@@ -184,6 +145,8 @@ export function initSearchListeners() {
         }
 
         if(coordsOrigin && coordsDestiny) {
+            await searchPanel.dismiss();
+            await bottomPanel_container.present();
             allRouting(coordsOrigin, coordsDestiny);
             state.searchRoutes = true;
         } else {

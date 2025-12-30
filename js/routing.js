@@ -1,4 +1,4 @@
-import { map, state, sidePanel_container, urlServer } from './globals.js';
+import { map, state, urlServer, busesList } from './globals.js';
 
 // Variables locales del módulo
 let geojsonData = null;
@@ -70,7 +70,7 @@ export function allRouting(coordsOrigin, coordsDestiny){
         }
     }
 
-    sidePanel_container.innerHTML = '<div style="padding:20px; text-align:center;">Calculando mejores rutas...</div>';
+    busesList.innerHTML = '<div style="padding:20px; text-align:center;">Calculando mejores rutas...</div>';
 
     fetch(urlServer + 'api/get2Routes_2.php', {
         method: 'POST',
@@ -81,7 +81,7 @@ export function allRouting(coordsOrigin, coordsDestiny){
     .then(data => handle2Routes(data, salida, llegada))
     .catch(error => {
         console.error('Error:', error.message);
-        sidePanel_container.innerHTML = '<div style="padding:20px; text-align:center; color:red;">Error al calcular rutas.</div>';
+        busesList.innerHTML = '<div style="padding:20px; text-align:center; color:red;">Error al calcular rutas.</div>';
     });
 }
 
@@ -260,7 +260,7 @@ async function handle2Routes(data, salida, llegada){
             const url = `${urlServer}api/proxy.php?action=lineas&idParada=${pId}&idLinea=${lId}&idBajada=${bId}&idTrasbordo=${tId}&trasbordoBajada=${idtrasbordoBajada}&idLinea2=${l2Id}&dSalida=${dSalida}&dLlegada=${dLlegada}&dTrasbordo=${dTrasbordo}`;
             
             const response = await fetch(url);
-            console.log(response);
+            //console.log(response);
             const timeData = await response.json();
             
             if (timeData.horaSalida) {
@@ -287,10 +287,10 @@ async function handle2Routes(data, salida, llegada){
 
     entradas = top10.map(item => item.original); 
 
-    sidePanel_container.innerHTML = '';
+    busesList.innerHTML = '';
 
     if (top10.length === 0) {
-        sidePanel_container.innerHTML = '<div style="padding:20px; text-align:center;">No se encontraron servicios disponibles en este momento.</div>';
+        busesList.innerHTML = '<div style="padding:20px; text-align:center;">No se encontraron servicios disponibles en este momento.</div>';
         return;
     }
 
@@ -298,7 +298,8 @@ async function handle2Routes(data, salida, llegada){
         const routeData = item.original[1];
         const timeData = item.times;
 
-        var omnibus = document.createElement('div');
+        var omnibus = document.createElement('ion-list');
+        omnibus.button = true;
         omnibus.className = 'route';
         if(i == 0) omnibus.classList.add('selected');
         omnibus.id = i;
@@ -345,13 +346,13 @@ async function handle2Routes(data, salida, llegada){
         }
         
         omnibus.innerHTML = htmlContent;
-        sidePanel_container.appendChild(omnibus);
+        busesList.appendChild(omnibus);
     });
 
     handleUISearch(0);
 }
 
-sidePanel_container.addEventListener('click', (event) => {
+busesList.addEventListener('click', (event) => {
     const routeDiv = event.target.closest('.route');
     if (routeDiv) {
         document.querySelectorAll('.route').forEach(r => r.classList.remove('selected'));

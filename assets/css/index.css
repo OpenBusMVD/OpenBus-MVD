@@ -99,37 +99,6 @@ body{
             margin-right: 5px;
         }
 
-        .popup {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            width: 100%;
-            background-color: white;
-            border: 1px solid #ccc;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-            /*z-index: 20;*/
-            height: auto;
-            overflow-y: auto;
-            display: none;
-            /*padding: 10px;
-            flex-wrap: wrap;
-            gap: 5px;*/
-            left: -10px; /* igual al padding de .search-container pero negativo */
-    		width: calc(100% + 20px); /* compensa el -10px izquierdo y derecho */
-        }
-
-        .popup.active {
-            display: block;
-        }
-
-        .popup-item {
-            background-color: #eee;
-            padding: 5px 10px;
-            /*border-radius: 5px;*/
-            cursor: pointer;
-            border: 1px solid black;
-        }
-
         .search-icon, .extra-icon {
             width: 20px;
             height: 20px;
@@ -210,4 +179,97 @@ body{
 
 .leaflet-routing-container {
     display: none !important;
+}
+
+.theme-x-dark .stop-base-layer, .theme-x-dark .mapa-base-layer{ 
+    filter: invert(100%) grayscale(100%);
+    transition: filter 0.3s ease;
+}
+
+.theme-dark .stop-base-layer, .theme-dark .mapa-base-layer{
+    filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+    transition: filter 0.3s ease;
+}
+
+.theme-midnight .mapa-base-layer{
+    filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(110%) saturate(130%);
+    transition: filter 0.3s ease;
+}
+
+.theme-midnight .stop-base-layer {
+    filter: invert(100%) drop-shadow(0 0 5px cyan);
+}
+
+.theme-gray .mapa-base-layer{
+    filter: grayscale(100%) brightness(105%);
+}
+
+.theme-blue .stop-base-layer, .theme-blue .mapa-base-layer{
+    filter: invert(100%) sepia(100%) hue-rotate(190deg) saturate(300%) brightness(80%);
+}
+
+.theme-retro .stop-base-layer, .theme-retro .mapa-base-layer{
+    filter: sepia(60%) contrast(95%) brightness(95%);
+}
+
+.theme-matrix .stop-base-layer, .theme-matrix .mapa-base-layer{
+    filter: invert(100%) sepia(100%) hue-rotate(90deg) saturate(200%) contrast(120%);
+}
+
+.theme-red .mapa-base-layer {
+    filter: grayscale(100%) sepia(100%) hue-rotate(320deg) saturate(250%) contrast(110%);
+}
+
+.theme-red .stop-base-layer {
+    filter: sepia(100%) hue-rotate(320deg) saturate(200%) brightness(80%);
+}
+
+.theme-milk .mapa-base-layer {
+    filter: invert(100%) contrast(140%) sepia(100%) hue-rotate(320deg) saturate(1000%) brightness(85%);
+}
+
+.theme-milk .stop-base-layer {
+    filter: invert(100%) drop-shadow(0 0 3px red);
+}
+
+.theme-minimalist .mapa-base-layer {
+    filter: grayscale(100%) brightness(105%) contrast(90%);
+}
+
+.theme-minimalist .stop-base-layer {
+    filter: grayscale(100%) opacity(0.7);
+}
+
+.theme-elegant .mapa-base-layer {
+    filter: invert(100%) hue-rotate(190deg) saturate(20%) brightness(90%) contrast(100%);
+}
+
+.theme-elegant .stop-base-layer {
+    filter: invert(90%);
+}
+
+.theme-ice .mapa-base-layer{
+    filter: sepia(100%) hue-rotate(130deg) drop-shadow(2px 2px 0px blue);
+}
+
+.theme-ice .stop-base-layer{
+    filter: invert(100%) hue-rotate(70deg) drop-shadow(2px 2px 0px blue);
+}
+
+/*.theme-win95 .mapa-base-layer {
+    filter: sepia(100%) hue-rotate(130deg) drop-shadow(2px 2px 0px blue);
+}
+
+/*
+.theme-win95 .stop-base-layer {
+    image-rendering: pixelated;
+    filter: invert(100%) hue-rotate(180deg) drop-shadow(2px 2px 0px blue);
+}
+*/
+.theme-purple .mapa-base-layer {
+    filter: invert(100%) sepia(100%) hue-rotate(250deg) saturate(300%) brightness(90%) contrast(110%);
+}
+
+.theme-purple .stop-base-layer {
+    filter: invert(100%) sepia(100%) hue-rotate(120deg) saturate(500%) drop-shadow(0 0 5px #00ffff);
 }

@@ -1,7 +1,7 @@
-import { urlServer } from './globals.js';
-export async function liveSearch(query, popupId, t1) {
-    let targetPopup = document.getElementById(popupId);
-    targetPopup.innerHTML = '';
+import { urlServer, resultsList } from './globals.js';
+
+export async function liveSearch(query, t1, type) {
+    resultsList.innerHTML = '';
 
     let urlProxy = urlServer+"api/proxy.php";
     let isNumeric = !isNaN(query) && query.trim() !== "";
@@ -23,7 +23,7 @@ export async function liveSearch(query, popupId, t1) {
         const json = await response.json();
 
         if (json.error || json === false) {
-             renderNoResults(targetPopup);
+             renderNoResults(resultsList);
              return;
         }
 
@@ -32,17 +32,19 @@ export async function liveSearch(query, popupId, t1) {
             if (Array.isArray(json) && typeof json[0] === 'string') {
                 try { dataToList = JSON.parse(json[0]); } catch(e){}
             }
-            renderPopupItems(dataToList, targetPopup);
+            renderPopupItems(dataToList, resultsList, type);
         } 
         else {
             if (isNumeric) {
-                const div = document.createElement('div');
-                div.className = 'popup-item';
+                console.log(type);
+                const div = document.createElement('ion-item');
+                div.button = true
+                div.className = 'popup-' + type;
                 div.textContent = query; 
                 div.setAttribute('codigo', -1); 
-                targetPopup.appendChild(div);
+                resultsList.appendChild(div);
             } else {
-                renderPopupItems(json, targetPopup);
+                renderPopupItems(json, resultsList, type);
             }
         }
     } catch (error) {
@@ -50,10 +52,11 @@ export async function liveSearch(query, popupId, t1) {
     }
 }
 
-function renderPopupItems(list, container) {
+function renderPopupItems(list, container, type) {
     for (var i = 0; i < 25 && list[i]?.["nombre"] !== undefined; i++) {
-        const div = document.createElement('div');
-        div.className = 'popup-item';
+        const div = document.createElement('ion-item');
+        div.button = true;
+        div.className = 'popup-' + type;
         div.textContent = list[i]["nombre"];
         div.setAttribute('codigo', list[i]["codigo"]);
         container.appendChild(div);
@@ -61,7 +64,8 @@ function renderPopupItems(list, container) {
 }
 
 function renderNoResults(container) {
-    const div = document.createElement('div');
+    const div = document.createElement('ion-item');
+    div.button = true;
     div.className = 'noResults';
     div.textContent = "No hay resultados";
     container.appendChild(div);

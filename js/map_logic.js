@@ -1,15 +1,11 @@
-import { map, state, myIcon, sidePanel, toggleBtn, urlServer } from './globals.js';
+import { map, state, myIcon, toggleBtn, urlServer } from './globals.js';
 
-L.DomEvent.disableClickPropagation(sidePanel);
-L.DomEvent.disableScrollPropagation(sidePanel);
-
-toggleBtn.addEventListener('click', () => {
-    sidePanel.classList.toggle('open');
-    toggleBtn.classList.toggle('open');
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    map.invalidateSize();
+  }, 100);
 });
 
-sidePanel.addEventListener('mouseenter', () => map.dragging.disable());
-sidePanel.addEventListener('mouseleave', () => map.dragging.enable());
 
 export async function cargarParadas() {
     try {
@@ -125,7 +121,7 @@ map.on('moveend', () => {
 map.on('zoomend', function() {
     let zoom = map.getZoom();
     if(clicked != true){
-        if (zoom >= 17 && state.searchRoutes == false){   
+        if (zoom >= 16 && state.searchRoutes == false){   
             map.addLayer(state.shelterMarkers);
         } else {
             map.removeLayer(state.shelterMarkers);
