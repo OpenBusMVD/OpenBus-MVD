@@ -40,30 +40,43 @@ L.tileLayer.wms('https://montevideo.gub.uy/app/geoserver/mapstore-base/cb_v_mdg_
     minZoom: 18
 }).addTo(map);
 
-const estiloBicisenda = {
-    color: '#333333', 
-    weight: 3, 
-    dashArray: '10, 5',
-    opacity: 0.8
-};
+let bikeMap = L.geoJSON();
 
-const urlWFS = 'https://montevideo.gub.uy/app/geoserver/mapstore-tematicas/ows?' + new URLSearchParams({
-    service: 'WFS',
-    version: '1.0.0',
-    request: 'GetFeature',
-    typeName: 'mapstore-tematicas:vyt_v_bi_bicicircuitos_activos',
-    outputFormat: 'application/json',
-    srsName: 'EPSG:4326'
-});
+export function showBikeLanes(){
+    const estiloBicisenda = {
+        color: '#333333', 
+        weight: 3, 
+        dashArray: '10, 5',
+        opacity: 0.8
+    };
 
-// fetch(urlWFS)
-//     .then(response => response.json())
-//     .then(geojsonData => {
-//         L.geoJSON(geojsonData, {
-//             style: estiloBicisenda
-//         }).addTo(map);
-//     })
-//     .catch(error => console.error("Error cargando bicisendas:", error));
+    const urlWFS = 'https://montevideo.gub.uy/app/geoserver/mapstore-tematicas/ows?' + new URLSearchParams({
+        service: 'WFS',
+        version: '1.0.0',
+        request: 'GetFeature',
+        typeName: 'mapstore-tematicas:vyt_v_bi_bicicircuitos_activos',
+        outputFormat: 'application/json',
+        srsName: 'EPSG:4326'
+    });
+
+    if(map.hasLayer(bikeMap)){
+        bikeMap.removeFrom(map);
+    }
+    else{
+      fetch(urlWFS)
+        .then(response => response.json())
+        .then(geojsonData => {
+            bikeMap = L.geoJSON(geojsonData, {
+                style: estiloBicisenda
+            }).addTo(map);
+        })
+        .catch(error => console.error("Error cargando bicisendas:", error));    
+    }
+
+      
+}
+
+
 
 export const state = {
     markerStops: [],
@@ -83,6 +96,7 @@ export const resultsList = document.getElementById('resultsList');
 export const busesList = document.getElementById('busesList');
 export const urlServer = window.CONFIG?.urlServer || 
 "https://gdsongverifier.alwaysdata.net/openbus/"; // <- Dejar en blanco si se ejecuta en local
+
 
 export const domElements = {
     popUp1: document.getElementById("popupOrigin1"),

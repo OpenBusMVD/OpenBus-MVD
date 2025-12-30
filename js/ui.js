@@ -1,4 +1,4 @@
-import { bottomPanel_container, searchPanel, map, myIcon } from './globals.js';
+import { bottomPanel_container, searchPanel, map, myIcon, showBikeLanes } from './globals.js';
 
 export function handleUI(){
 	bottomPanel_container.breakpoints = [0.25, 0.5, 0.85];
@@ -30,4 +30,8 @@ function settings(){
 		changeTheme(e.detail.value)
     	
   	});
+
+    document.getElementById('bikeToggle').addEventListener('ionChange', (e) => {
+        showBikeLanes();
+    })
 }
