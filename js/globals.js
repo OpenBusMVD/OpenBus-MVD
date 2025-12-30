@@ -174,8 +174,8 @@ export const bottomPanel_container = document.getElementById('bottomModal');
 export const resultsList = document.getElementById('resultsList');
 export const busesList = document.getElementById('busesList');
 export const urlServer = window.CONFIG?.urlServer || 
-""; // <- Dejar en blanco si se ejecuta en local
-//https://gdsongverifier.alwaysdata.net/openbus/
+"https://gdsongverifier.alwaysdata.net/openbus/"; // <- Dejar en blanco si se ejecuta en local
+
 
 export const domElements = {
     popUp1: document.getElementById("popupOrigin1"),
