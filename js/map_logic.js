@@ -1,4 +1,4 @@
-import { map, state, myIcon, toggleBtn, urlServer } from './globals.js';
+import { map, state, myIcon, toggleBtn, urlServer, bikeStopsMap, bikeStopsState } from './globals.js';
 
 window.addEventListener('load', () => {
   setTimeout(() => {
@@ -121,10 +121,16 @@ map.on('moveend', () => {
 map.on('zoomend', function() {
     let zoom = map.getZoom();
     if(clicked != true){
-        if (zoom >= 16 && state.searchRoutes == false){   
+        if (zoom >= 16 && state.searchRoutes == false && !map.hasLayer(state.shelterMarkers)){   
             map.addLayer(state.shelterMarkers);
-        } else {
+        } else if(zoom < 16 && map.hasLayer(state.shelterMarkers)){
             map.removeLayer(state.shelterMarkers);
         }        
+    }
+    if(bikeStopsState && zoom >= 15 && !map.hasLayer(bikeStopsMap)){
+        map.addLayer(bikeStopsMap);
+    }
+    else if(map.hasLayer(bikeStopsMap) && zoom < 15){
+        map.removeLayer(bikeStopsMap);
     }
 });

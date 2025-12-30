@@ -1,4 +1,4 @@
-import { bottomPanel_container, searchPanel, map, myIcon, showBikeLanes } from './globals.js';
+import { bottomPanel_container, searchPanel, map, myIcon, showBikeLanes, showBikeStops } from './globals.js';
 
 export function handleUI(){
 	bottomPanel_container.breakpoints = [0.25, 0.5, 0.85];
@@ -18,7 +18,7 @@ export function handleUI(){
 export function changeTheme(nombreTema) {
     var contenedorMapa = map.getContainer();
     
-    contenedorMapa.classList.remove('theme-x-dark','theme-dark','theme-midnight','theme-gray','theme-blue','theme-retro','theme-matrix', 'theme-red', 'theme-milk', 'theme-minimalist', 'theme-elegant', 'theme-ice', 'theme-purple');
+    contenedorMapa.classList.remove('theme-x-dark','theme-dark','theme-midnight','theme-gray','theme-blue','theme-retro','theme-matrix', 'theme-red', 'theme-milk', 'theme-minimalist', 'theme-ice', 'theme-purple');
     if (nombreTema) {
         contenedorMapa.classList.add(nombreTema);
     }
@@ -33,5 +33,8 @@ function settings(){
 
     document.getElementById('bikeToggle').addEventListener('ionChange', (e) => {
         showBikeLanes();
+    })
+    document.getElementById('bikeStopsToggle').addEventListener('ionChange', (e) => {
+        showBikeStops();
     })
 }

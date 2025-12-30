@@ -65,7 +65,7 @@ export function allRouting(coordsOrigin, coordsDestiny){
          if(!state.latlng[i]) continue;
         var parada = state.latlng[i];
         var distance = map.distance(llegada,parada);
-        if(distance < 500){
+        if(distance < 1000){
             totalLlegada.push({busID: state.markerStops[i].busStopID, distancia: distance});
         }
     }
@@ -233,6 +233,7 @@ function handleUISearch(routeId){
 }
 
 async function handle2Routes(data, salida, llegada){
+    console.log(data);
     let rawEntradas = Object.entries(data);
     
     const promises = rawEntradas.map(async (entry) => {

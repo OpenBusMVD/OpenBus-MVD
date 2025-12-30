@@ -38,10 +38,11 @@ let bikeMap = L.geoJSON();
 
 export function showBikeLanes(){
     const estiloBicisenda = {
-        color: '#333333', 
-        weight: 3, 
-        dashArray: '10, 5',
-        opacity: 0.8
+        color: '#2ecc71', 
+        weight: 5, 
+        opacity: 0.9,
+        lineCap: 'round',
+        lineJoin: 'round'
     };
 
     const urlWFS = 'https://montevideo.gub.uy/app/geoserver/mapstore-tematicas/ows?' + new URLSearchParams({
@@ -66,9 +67,95 @@ export function showBikeLanes(){
         })
         .catch(error => console.error("Error cargando bicisendas:", error));    
     }
-
       
 }
+
+export let bikeStopsMap = L.geoJSON();
+export let bikeStopsState = false;
+
+export function showBikeStops() {
+    bikeStopsState = !bikeStopsState;
+
+    const urlWFS_Bicis =
+        'https://montevideo.gub.uy/app/geoserver/mapstore-tematicas/ows?' +
+        new URLSearchParams({
+            service: 'WFS',
+            version: '1.0.0',
+            request: 'GetFeature',
+            typeName: 'mapstore-tematicas:vyt_bi_bicicletarios',
+            outputFormat: 'application/json',
+            srsName: 'EPSG:4326'
+        });
+
+    if(!bikeStopsState && map.hasLayer(bikeStopsMap)){
+        map.removeLayer(bikeStopsMap);
+    }
+    else{
+      fetch(urlWFS_Bicis)
+        .then(r => r.json())
+        .then(data => {
+            bikeStopsMap = L.geoJSON(data, {
+                pointToLayer(feature, latlng) {
+                    return L.marker(latlng, {
+                        icon: L.divIcon({
+                            className: '',
+                            html: `
+                                <div class="marker-bici">
+                                    <img src="assets/img/bike.png" alt="Bici">
+                                </div>
+                            `,
+                            iconSize: [24, 24],
+                            iconAnchor: [12, 12],
+                            popupAnchor: [0, -12]
+                        })
+                    });
+                },
+
+                onEachFeature: function(feature, layer) {
+                if (feature.properties) {
+                    // 1. Extraemos los datos útiles
+                    // Usamos || "" para evitar que escriba "undefined" si falta algún dato
+                    const nombre = feature.properties.nombre_ubicacion || "Bicicletario";
+                    const cantidad = feature.properties.cantidad || "?";
+                    // Limpiamos el texto "Clasificación: " para que no ocupe tanto espacio
+                    const tipo = (feature.properties.observaciones || "").replace("Clasificación: ", "");
+
+                    // 2. Armamos un diseño bonito
+                    const html = `
+                        <div style="text-align: center; min-width: 120px; font-family: sans-serif;">
+                            <!-- Título con el nombre -->
+                            <b style="font-size: 14px; color: #333; display:block; margin-bottom:5px;">
+                                ${nombre}
+                            </b>
+                            
+                            <!-- Capacidad con emoji -->
+                            <div style="background-color: #eee; border-radius: 4px; padding: 2px 5px; font-size: 13px; font-weight: bold; display: inline-block;">
+                                🚲 Capacidad: ${cantidad}
+                            </div>
+
+                            <b style="font-size: 14px; color: #333; display:block; margin-bottom:5px;">
+                                Observaciones:
+                            </b>
+                            <div style="font-size: 11px; color: #666; margin-top: 6px; font-style: italic;">
+                                ${tipo}
+                            </div>
+                        </div>
+                    `;
+                    
+                    layer.bindPopup(html);
+                }
+            }
+            });
+            if(map.getZoom() >= 15 && !map.hasLayer(bikeStopsMap)){
+                map.addLayer(bikeStopsMap);
+            }
+
+            
+        })
+        .catch(console.error);  
+    }
+}
+
 
 export const state = {
     markerStops: [],
@@ -87,8 +174,8 @@ export const bottomPanel_container = document.getElementById('bottomModal');
 export const resultsList = document.getElementById('resultsList');
 export const busesList = document.getElementById('busesList');
 export const urlServer = window.CONFIG?.urlServer || 
-"https://gdsongverifier.alwaysdata.net/openbus/"; // <- Dejar en blanco si se ejecuta en local
-
+""; // <- Dejar en blanco si se ejecuta en local
+//https://gdsongverifier.alwaysdata.net/openbus/
 
 export const domElements = {
     popUp1: document.getElementById("popupOrigin1"),

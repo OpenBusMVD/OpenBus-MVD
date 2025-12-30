@@ -36,7 +36,6 @@ export async function liveSearch(query, t1, type) {
         } 
         else {
             if (isNumeric) {
-                console.log(type);
                 const div = document.createElement('ion-item');
                 div.button = true
                 div.className = 'popup-' + type;

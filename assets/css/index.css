@@ -181,13 +181,33 @@ body{
     display: none !important;
 }
 
-.theme-x-dark .stop-base-layer, .theme-x-dark .mapa-base-layer{ 
-    filter: invert(100%) grayscale(100%);
-    transition: filter 0.3s ease;
+.marker-bici{
+    width: 100%;
+    height: 100%;
+    background-color: #2ecc71; /* Cyan (Tu color base) */
+    border: 1px solid black;   /* Borde negro */
+    border-radius: 50%;        /* Lo hace redondo */
+    
+    /* Centrar el logo */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
+    /* Sombra para que destaque */
+    box-shadow: 2px 2px 4px rgba(0,0,0,0.3);
 }
 
-.theme-dark .stop-base-layer, .theme-dark .mapa-base-layer{
-    filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+/* El logo/imagen adentro */
+.marker-bici img {
+    width: 14px; /* Ajusta esto según tu logo (debe ser menor a 24px) */
+    height: 14px;
+    object-fit: contain;
+    /* Opcional: si tu icono es negro y quieres que cambie de color con filtro */
+    /* filter: invert(100%); */ 
+}
+
+.theme-x-dark .stop-base-layer, .theme-x-dark .mapa-base-layer{ 
+    filter: invert(100%) grayscale(100%);
     transition: filter 0.3s ease;
 }
 
@@ -240,11 +260,11 @@ body{
     filter: grayscale(100%) opacity(0.7);
 }
 
-.theme-elegant .mapa-base-layer {
+.theme-dark .mapa-base-layer {
     filter: invert(100%) hue-rotate(190deg) saturate(20%) brightness(90%) contrast(100%);
 }
 
-.theme-elegant .stop-base-layer {
+.theme-dark .stop-base-layer {
     filter: invert(90%);
 }
 
