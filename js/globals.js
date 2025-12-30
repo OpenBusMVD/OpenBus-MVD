@@ -33,12 +33,6 @@ var semaforos = L.tileLayer.wms('https://montevideo.gub.uy/app/geoserver/mapstor
     minZoom: 16
 }).addTo(map);
 
-L.tileLayer.wms('https://montevideo.gub.uy/app/geoserver/mapstore-base/cb_v_mdg_accesos_puerta/ows?', {
-    layers: 'cb_v_mdg_accesos_puerta',
-    format: 'image/png',
-    transparent: true,
-    minZoom: 18
-}).addTo(map);
 
 let bikeMap = L.geoJSON();
 
@@ -76,8 +70,6 @@ export function showBikeLanes(){
       
 }
 
-
-
 export const state = {
     markerStops: [],
     latlng: [],
@@ -95,8 +87,8 @@ export const bottomPanel_container = document.getElementById('bottomModal');
 export const resultsList = document.getElementById('resultsList');
 export const busesList = document.getElementById('busesList');
 export const urlServer = window.CONFIG?.urlServer || 
-"https://gdsongverifier.alwaysdata.net/openbus/"; // <- Dejar en blanco si se ejecuta en local
-
+""; // <- Dejar en blanco si se ejecuta en local
+//https://gdsongverifier.alwaysdata.net/openbus/
 
 export const domElements = {
     popUp1: document.getElementById("popupOrigin1"),
