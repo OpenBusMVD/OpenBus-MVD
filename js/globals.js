@@ -1,9 +1,9 @@
 proj4.defs("EPSG:32721", "+proj=utm +zone=21 +south +datum=WGS84 +units=m +no_defs");
 
-export var myIcon = L.icon({
-    iconUrl: 'assets/img/Bus_stop_symbol.png',
-    iconSize: [27.8, 25.6],
-    className: "stop-base-layer"
+export var myIcon = L.divIcon({
+    iconSize: [26, 26],
+    className: "stop-base-layer",
+    html: "<div class='marker-bus'></div><img src='assets/img/bus-stop.png' class='icon-img'>"
 });
 
 export var iconBus = L.icon({
@@ -113,14 +113,11 @@ export function showBikeStops() {
 
                 onEachFeature: function(feature, layer) {
                 if (feature.properties) {
-                    // 1. Extraemos los datos útiles
                     // Usamos || "" para evitar que escriba "undefined" si falta algún dato
                     const nombre = feature.properties.nombre_ubicacion || "Bicicletario";
                     const cantidad = feature.properties.cantidad || "?";
-                    // Limpiamos el texto "Clasificación: " para que no ocupe tanto espacio
                     const tipo = (feature.properties.observaciones || "").replace("Clasificación: ", "");
 
-                    // 2. Armamos un diseño bonito
                     const html = `
                         <div style="text-align: center; min-width: 120px; font-family: sans-serif;">
                             <!-- Título con el nombre -->
@@ -133,7 +130,7 @@ export function showBikeStops() {
                                 🚲 Capacidad: ${cantidad}
                             </div>
 
-                            <b style="font-size: 14px; color: #333; display:block; margin-bottom:5px;">
+                            <b style="font-size: 12px; color: #333; display:block; margin-bottom:5px; margin-top:5px;">
                                 Observaciones:
                             </b>
                             <div style="font-size: 11px; color: #666; margin-top: 6px; font-style: italic;">
@@ -146,7 +143,11 @@ export function showBikeStops() {
                 }
             }
             });
-            if(map.getZoom() >= 15 && !map.hasLayer(bikeStopsMap)){
+            /*
+            if(map.getZoom() >= 14 && !map.hasLayer(bikeStopsMap)){
+                map.addLayer(bikeStopsMap);
+            }*/
+            if(!map.hasLayer(bikeStopsMap)){
                 map.addLayer(bikeStopsMap);
             }
 
@@ -167,15 +168,23 @@ export const state = {
     searchRoutes: false // Controla si se buscó una ruta o no, para mostrar todas las paradas o solo las relevantes
 };
 
+export const lineas_ucot = ["17","71","79","300","306","316","317","328","329","330","370","371","379","396","CE1","L12","L13","L17","L18","L31","L32","L33"];
+export const lineas_coetc = ["2","76","402","404","405","407","409","427","456","494","495","CE1","G","L7","L14","L16","L19","L29","PB","D9","DM1"];
+export const lineas_come = ["505","522","524","526","538","546","582","L24","L25","L38","D11","DM1"];
+
 export const toggleBtn = document.getElementById('toggleBtn');
 export const searchPanel = document.getElementById('searchPanel');
 export const resultsList_container = document.getElementById('resultsList_container');
 export const bottomPanel_container = document.getElementById('bottomModal');
+export const busesPanel_container = document.getElementById('busesModal');
+export const busListModal = document.getElementById('busListModal');
+export const busDetailModal = document.getElementById('busDetailModal');
+export const paradaModal = document.getElementById('paradaModal');
 export const resultsList = document.getElementById('resultsList');
 export const busesList = document.getElementById('busesList');
 export const urlServer = window.CONFIG?.urlServer || 
-"https://gdsongverifier.alwaysdata.net/openbus/"; // <- Dejar en blanco si se ejecuta en local
-
+""; // <- Dejar en blanco si se ejecuta en local
+//https://gdsongverifier.alwaysdata.net/openbus/
 
 export const domElements = {
     popUp1: document.getElementById("popupOrigin1"),

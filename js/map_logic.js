@@ -1,4 +1,5 @@
-import { map, state, myIcon, toggleBtn, urlServer, bikeStopsMap, bikeStopsState } from './globals.js';
+import { map, state, myIcon, toggleBtn, urlServer, bikeStopsMap, bikeStopsState, busesPanel_container, 
+busListModal, busDetailModal, paradaModal, lineas_come, lineas_coetc, lineas_ucot} from './globals.js';
 
 window.addEventListener('load', () => {
   setTimeout(() => {
@@ -18,7 +19,7 @@ export async function cargarParadas() {
             let lat = arrays['location']['coordinates'][1];
             let lon = arrays['location']['coordinates'][0];
 
-            state.markerStops[i] = L.marker([lat, lon], {icon: myIcon, autoPan: false}).on('click', onClick);
+            state.markerStops[i] = L.marker([lat, lon], {icon: myIcon, autoPan: false}).on('click', busStopClick);
             state.markerStops[i].myID = i;
             state.markerStops[i].busStopID = arrays['busstopId'];
 
@@ -52,6 +53,74 @@ map.on('locationfound', onLocationFound);
 var popVar = -1;
 var clicked = false;
 var popUpStop;
+
+async function busStopClick(e){
+    paradaModal.textContent = 'esq. Ejido (Parada Nº ' + e.target.busStopID + ')';
+    busListModal.innerHTML = '<ion-chip outline="true" color="dark" class="selected">Todas</ion-chip>';
+    busDetailModal.innerHTML = '';
+    try {
+            const response = await fetch(urlServer+`api/proxy.php?action=proximos&idParada=${e.target.busStopID}`);
+            //console.log(response);
+            const data = await response.json();
+            
+            if (data) {
+                let empresa, empresaColor;
+                data.lineas.forEach((lines) => {
+                    let lineasChip = document.createElement('ion-chip');
+                    lineasChip.outline = true;
+                    lineasChip.className = "line-chip";
+                    lineasChip.textContent = lines;
+                    busListModal.appendChild(lineasChip);
+                });
+                data.proximos.forEach((info) => {
+                    let infoList = document.createElement('ion-item');
+                    infoList.detail = false;
+                    infoList.className = "bus-item";
+                    infoList.button = true;
+                    if(lineas_ucot.includes(info.linea)){
+                        empresa = "UCOT";
+                        empresaColor = "bus-yellow"
+                    }
+                    else if(lineas_coetc.includes(info.linea)){
+                        empresa = "COETC";
+                        empresaColor = "bus-red"
+                    }
+                    else if(lineas_come.includes(info.linea)){
+                        empresa = "COME";
+                        empresaColor = "bus-green"
+                    }
+                    else{
+                        empresa = "CUTSCA"
+                        empresaColor = "bus-blue"
+                    }
+                    infoList.innerHTML = `
+                            <div slot="start" class="line-badge ${empresaColor}">${info.linea}</div>
+                            <ion-label>
+                                <h2 class="destination-text">TOLEDO CHICO</h2>
+                                <p class="sub-info">Empresa: ${empresa}</p>
+                            </ion-label>
+                            <div slot="end" class="time-container">
+                                <div class="minutes scheduled-time">
+                                    ${info.hora}
+                                </div>
+                                <div class="real-time-status scheduled-label">
+                                    ~${info.restante} min<ion-icon name="time-outline"></ion-icon>
+                                </div>                  
+                            </div>
+                    `;
+                    busDetailModal.appendChild(infoList);
+                });
+            } 
+            else{
+                busDetailModal.textContent = "Sin información";
+            }
+
+        } catch (error) {
+            console.error("Error cargando líneas:", error);
+            busDetailModal.textContent = "Error cargando datos.";
+    }
+    busesPanel_container.present();
+}
 
 async function onClick(e) {
     state.clickedMarkers.clearLayers();
@@ -127,10 +196,10 @@ map.on('zoomend', function() {
             map.removeLayer(state.shelterMarkers);
         }        
     }
-    if(bikeStopsState && zoom >= 15 && !map.hasLayer(bikeStopsMap)){
+    /*if(bikeStopsState && zoom >= 14 && !map.hasLayer(bikeStopsMap)){
         map.addLayer(bikeStopsMap);
     }
-    else if(map.hasLayer(bikeStopsMap) && zoom < 15){
+    else if(map.hasLayer(bikeStopsMap) && zoom < 14){
         map.removeLayer(bikeStopsMap);
-    }
+    }*/
 });

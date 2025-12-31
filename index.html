@@ -86,6 +86,9 @@
 
         <ion-content>
           <ion-list>
+            <ion-item-divider>
+              <ion-label>Divisor 1</ion-label>
+            </ion-item-divider>
             <ion-item>
                 <ion-select label="Cambiar tema" placeholder="Claro" id="theme_select">
                   <ion-select-option value="">Claro</ion-select-option>
@@ -101,7 +104,10 @@
                   <ion-select-option value="theme-ice">Hielo</ion-select-option>
                   <ion-select-option value="theme-purple">Violeta</ion-select-option>
                 </ion-select>
-            </ion-item>  
+            </ion-item> 
+            <ion-item-divider>
+              <ion-label>Bicis</ion-label>
+            </ion-item-divider> 
             <ion-item>
               <ion-toggle enable-on-off-labels="true" id="bikeToggle">Mostrar ciclovías</ion-toggle>
             </ion-item>
@@ -112,8 +118,6 @@
           
         </ion-content>
     </ion-modal>
-
-
 
     <ion-modal
       id="bottomModal"
@@ -136,6 +140,62 @@
         <ion-list id="busesList">
         </ion-list>
       </ion-content>
+    </ion-modal>
+
+    <ion-modal
+      id="busesModal"
+      initial-breakpoint="0.5"
+      backdrop-breakpoint="0.5"
+      backdrop-dismiss="false"
+      expand-to-scroll="false"
+      handle="true"
+    >
+      <ion-header class="ion-no-border">
+        <ion-toolbar class="stop-toolbar">
+          <div class="stop-info-container">
+            <h1 class="stop-street">Av. 18 de Julio</h1>
+            <p id="paradaModal" class="stop-cross">esq. Ejido (Parada 3200)</p>
+          </div>
+
+          <ion-buttons slot="end">
+            <ion-button>
+              <ion-icon slot="icon-only" name="heart-outline"></ion-icon>
+            </ion-button>
+            <ion-button id="closeBusesModal">
+              <ion-icon slot="icon-only" name="close-outline"></ion-icon>
+            </ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+
+        <div class="lines-scroll-container" id="busListModal">
+        </div>
+      </ion-header>
+
+
+      <ion-content>
+
+        <ion-list id="busDetailModal">
+          <!-- <ion-item button detail="false" class="bus-item">
+              <div slot="start" class="line-badge">
+                D1
+              </div>
+              <ion-label>
+                <h2 class="destination-text">TOLEDO CHICO</h2>
+                <p class="sub-info">
+                    <ion-icon name="accessibility" class="icon-a11y"></ion-icon> 
+                    Empresa: Cutcsa
+                </p>
+              </ion-label>
+              <div slot="end" class="time-container">
+                <div class="minutes">5 min</div>
+                <div class="real-time-status live">
+                    16:46 <ion-icon name="pulse"></ion-icon>
+                </div>
+              </div>
+            </ion-item> -->
+          <ion-list>
+
+        </ion-content>
     </ion-modal>
 
   </ion-app>

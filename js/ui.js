@@ -1,7 +1,8 @@
-import { bottomPanel_container, searchPanel, map, myIcon, showBikeLanes, showBikeStops } from './globals.js';
+import { bottomPanel_container, searchPanel, map, myIcon, showBikeLanes, showBikeStops, busesPanel_container } from './globals.js';
 
 export function handleUI(){
 	bottomPanel_container.breakpoints = [0.25, 0.5, 0.85];
+    busesPanel_container.breakpoints = [0.25, 0.5, 0.85];
 	document.getElementById('closeBottomModal').addEventListener('click', async () => {
 	    const modal = document.getElementById('bottomModal');
 	    await modal.dismiss();
@@ -11,6 +12,9 @@ export function handleUI(){
     });
     document.getElementById('closeSettingsBtn').addEventListener('click', async () => {
     	await document.getElementById('settingsPanel').dismiss();
+    })
+    document.getElementById('closeBusesModal').addEventListener('click', async () => {
+        await document.getElementById('busesModal').dismiss();
     })
     settings();
 }

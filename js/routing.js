@@ -1,4 +1,4 @@
-import { map, state, urlServer, busesList } from './globals.js';
+import { map, state, urlServer, busesList, lineas_ucot, lineas_coetc, lineas_come} from './globals.js';
 
 // Variables locales del módulo
 let geojsonData = null;
@@ -19,11 +19,6 @@ var coordsBajadaBus = 0;
 var coordsSalidaBus = 0;
 var coordsLlegadaBus = 0;
 var coordsTrasbordoBus = 0;
-
-// Colores de buses
-var lineas_ucot = ["17","71","79","300","306","316","317","328","329","330","370","371","379","396","CE1","L12","L13","L17","L18","L31","L32","L33"];
-var lineas_coetc = ["2","76","402","404","405","407","409","427","456","494","495","CE1","G","L7","L14","L16","L19","L29","PB","D9","DM1"];
-var lineas_come = ["505","522","524","526","538","546","582","L24","L25","L38","D11","DM1"];
 
 export function allRouting(coordsOrigin, coordsDestiny){
     const greenIcon = L.icon({
