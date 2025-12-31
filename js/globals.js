@@ -8,7 +8,7 @@ export var myIcon = L.divIcon({
 
 export var iconBus = L.icon({
     iconUrl: 'assets/img/bus-icon.png',
-    iconSize: [55.6, 51.2] // Doble de tamaño que el icono de la parada
+    iconSize: [55.6, 51.2]
 });
 
 export var map = L.map('map', {zoomControl: false, preferCanvas: true, attributionControl: false}).setView([-34.872972, -56.14629063], 13);
@@ -113,7 +113,6 @@ export function showBikeStops() {
 
                 onEachFeature: function(feature, layer) {
                 if (feature.properties) {
-                    // Usamos || "" para evitar que escriba "undefined" si falta algún dato
                     const nombre = feature.properties.nombre_ubicacion || "Bicicletario";
                     const cantidad = feature.properties.cantidad || "?";
                     const tipo = (feature.properties.observaciones || "").replace("Clasificación: ", "");
@@ -183,8 +182,7 @@ export const paradaModal = document.getElementById('paradaModal');
 export const resultsList = document.getElementById('resultsList');
 export const busesList = document.getElementById('busesList');
 export const urlServer = window.CONFIG?.urlServer || 
-""; // <- Dejar en blanco si se ejecuta en local
-//https://gdsongverifier.alwaysdata.net/openbus/
+"https://gdsongverifier.alwaysdata.net/openbus/"; // <- Dejar en blanco si se ejecuta en local
 
 export const domElements = {
     popUp1: document.getElementById("popupOrigin1"),
