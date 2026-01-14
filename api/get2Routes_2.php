@@ -72,27 +72,70 @@
 
 	function helper($codVecina, $cod_ubic_p, $idLinea, $idVariante, $vecinas, $originalOrdinal){
 		global $jsonParadas, $llegadasLineas, $llegadasVariantes, $llegadaDistancia, $totalTrasbordo, $salidaDistancia, $i;
-		foreach($jsonParadas[strval($codVecina)]["lineas"] as $idTrasbordo => $lineas){				
+		
+		foreach($jsonParadas[strval($codVecina)]["lineas"] as $idTrasbordo => $lineas){             
 			if(in_array($idTrasbordo, $llegadasLineas) && isset($salidaDistancia[$idLinea][$idVariante])){
 
 				foreach($lineas as $subVariantes){
 					$codSubVariantes = $subVariantes['cod_varian'];
 
-
 					if((in_array($codSubVariantes, $llegadasVariantes[$idTrasbordo])) && (array_column($jsonParadas[$llegadaDistancia[$idTrasbordo][$codSubVariantes]["busID"]]["lineas"][$idTrasbordo],"ordinal","cod_varian")[$codSubVariantes] > array_column($jsonParadas[$codVecina]["lineas"][$idTrasbordo],"ordinal","cod_varian")[$codSubVariantes])){
+						
 						$clave = $idLinea . '-' . $idTrasbordo;
 						
-						//&& ($i > $totalTrasbordo[$clave]["salida"]["ordinalLlegada"] + 6)
-						if((!isset($totalTrasbordo[$clave])) || (($totalTrasbordo[$clave]["trasbordo"]["distanciaTrasbordo"] > $vecinas['distancia']))){
+						$actualizar = false;
+
+						if(!isset($totalTrasbordo[$clave])) {
+							$actualizar = true;
+						} 
+						else {
+							$ordinalGuardado = $totalTrasbordo[$clave]["salida"]["ordinalLlegada"];
+							$distanciaGuardada = $totalTrasbordo[$clave]["trasbordo"]["distanciaTrasbordo"];
+							
+							$ordinalActual = $i;
+							$distanciaActual = $vecinas['distancia'];
+
+							$diferencia = $ordinalActual - $ordinalGuardado;
+
+							if ($diferencia <= 2 && $distanciaActual < $distanciaGuardada) {
+								$actualizar = true;
+							}
+							elseif ($distanciaGuardada > 250 && $distanciaActual < $distanciaGuardada) {
+								$actualizar = true;
+							}
+						}
+
+						if($actualizar){
 							if($cod_ubic_p == $codVecina){
 								$flag = true;
 							}
 							else{
 								$flag = false;
 							}
-							$totalTrasbordo[$clave] = ["salida" => ["idParada" => $salidaDistancia[$idLinea][$idVariante]["busID"], "idLinea" => $idLinea, "idVariante" => $idVariante, "idBajada" => (int)$cod_ubic_p, "distanciaSalida" => $salidaDistancia[$idLinea][$idVariante]["distancia"], "ordinalSalida" => $originalOrdinal, "ordinalLlegada" => $i],"trasbordo" => ["idParada" => (int)$codVecina, "idLinea" => $idTrasbordo, "idVariante" => $codSubVariantes, "idBajada" => $llegadaDistancia[$idTrasbordo][$codSubVariantes]["busID"],"distanciaTrasbordo" => $vecinas['distancia'], "distanciaDestino" => $llegadaDistancia[$idTrasbordo][$codSubVariantes]["distancia"], "flag" => $flag, "ordinalSalida" => array_column($jsonParadas[$codVecina]["lineas"][$idTrasbordo],"ordinal","cod_varian")[$codSubVariantes], "ordinalLlegada" => array_column($jsonParadas[$llegadaDistancia[$idTrasbordo][$codSubVariantes]["busID"]]["lineas"][$idTrasbordo],"ordinal","cod_varian")[$codSubVariantes]]];	
+							
+							$totalTrasbordo[$clave] = [
+								"salida" => [
+									"idParada" => $salidaDistancia[$idLinea][$idVariante]["busID"], 
+									"idLinea" => $idLinea, 
+									"idVariante" => $idVariante, 
+									"idBajada" => (int)$cod_ubic_p, 
+									"distanciaSalida" => $salidaDistancia[$idLinea][$idVariante]["distancia"], 
+									"ordinalSalida" => $originalOrdinal, 
+									"ordinalLlegada" => $i
+								],
+								"trasbordo" => [
+									"idParada" => (int)$codVecina, 
+									"idLinea" => $idTrasbordo, 
+									"idVariante" => $codSubVariantes, 
+									"idBajada" => $llegadaDistancia[$idTrasbordo][$codSubVariantes]["busID"],
+									"distanciaTrasbordo" => $vecinas['distancia'], 
+									"distanciaDestino" => $llegadaDistancia[$idTrasbordo][$codSubVariantes]["distancia"], 
+									"flag" => $flag, 
+									"ordinalSalida" => array_column($jsonParadas[$codVecina]["lineas"][$idTrasbordo],"ordinal","cod_varian")[$codSubVariantes], 
+									"ordinalLlegada" => array_column($jsonParadas[$llegadaDistancia[$idTrasbordo][$codSubVariantes]["busID"]]["lineas"][$idTrasbordo],"ordinal","cod_varian")[$codSubVariantes]
+								]
+							];  
 						}
-
 					}
 				}
 			}
