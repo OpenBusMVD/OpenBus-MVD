@@ -113,24 +113,14 @@ body{
         }
 
         .route {
-            margin: 0;
-            border-bottom: 1px solid #ddd;
-            padding: 10px 0;
-            cursor: pointer;
-            display: block;
-            width: 100%;
-            box-sizing: border-box;
-            z-index: 10005;
-            user-select: none;
+            --padding-start: 12px;
+            --padding-end: 12px;
+            --min-height: 64px;
         }
 
         .route.selected{
             background-color: #E0E0E0;
             border-left: 4px solid #007bff;
-        }
-
-        .route div, p{
-            margin-left: 10px;
         }
 
         .line{
@@ -374,6 +364,73 @@ ion-chip.selected {
 .real-time-status.scheduled-label ion-icon {
     font-size: 0.9rem;
 }
+
+
+
+.line-badge-small {
+    color: white;
+    font-weight: 700;
+    font-size: 0.85rem;
+    padding: 4px 6px;
+    border-radius: 6px;
+    min-width: 45px;
+    text-align: center;
+}
+
+.transfer-visual {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    margin-right: 8px;
+}
+
+.right-info-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    min-width: 75px; 
+    text-align: right;
+}
+
+
+.wait-time {
+    color: var(--ion-color-primary);
+    line-height: 1;
+    margin-bottom: 2px;
+}
+
+.wait-time .big-num {
+    font-size: 1.4rem;
+    font-weight: 800;
+}
+
+.wait-time .min-text {
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-left: 1px;
+}
+
+.departure-time {
+    font-size: 0.85rem;
+    color: var(--ion-text-color);
+    margin-bottom: 4px;
+}
+
+.total-duration {
+    font-size: 0.75rem;
+    color: var(--ion-color-medium);
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.total-duration ion-icon {
+    font-size: 0.8rem;
+}
+
+
 
 .theme-x-dark .stop-base-layer, .theme-x-dark .mapa-base-layer{ 
     filter: invert(100%) grayscale(100%);

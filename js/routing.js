@@ -291,10 +291,11 @@ async function handle2Routes(data, salida, llegada){
     }
 
     top10.forEach((item, i) => {
+        console.log(item);
         const routeData = item.original[1];
         const timeData = item.times;
 
-        var omnibus = document.createElement('ion-list');
+        var omnibus = document.createElement('ion-item');
         omnibus.button = true;
         omnibus.className = 'route';
         if(i == 0) omnibus.classList.add('selected');
@@ -320,6 +321,23 @@ async function handle2Routes(data, salida, llegada){
         `;
 
         let htmlContent = "";
+        let empresa, empresaColor;
+        if(lineas_ucot.includes(routeData.salida.idLinea.toString())){
+                        empresa = "UCOT";
+                        empresaColor = "bus-yellow"
+                    }
+                    else if(lineas_coetc.includes(routeData.salida.idLinea.toString())){
+                        empresa = "COETC";
+                        empresaColor = "bus-red"
+                    }
+                    else if(lineas_come.includes(routeData.salida.idLinea.toString())){
+                        empresa = "COME";
+                        empresaColor = "bus-green"
+                    }
+                    else{
+                        empresa = "CUTSCA"
+                        empresaColor = "bus-blue"
+                    }
 
         if(routeData.trasbordo.length != 0){
             let colorTrasbordo;
@@ -328,20 +346,60 @@ async function handle2Routes(data, salida, llegada){
             else if(lineas_come.includes(routeData.trasbordo.idLinea.toString())) colorTrasbordo = "bus-green";
             else colorTrasbordo = "bus-blue";
 
-            htmlContent = headerInfo + `
-            <div class="bus-icons">
-                <h3 class="${color}">${routeData.salida.idLinea}</h3> 
-                <div class="line"></div>
-                <h3 class="${colorTrasbordo}">${routeData.trasbordo.idLinea}</h3> 
-            </div>`;
+            omnibus.innerHTML = `
+                <div slot="start" class="transfer-visual">
+                <!-- Primera Línea -->
+                <div class="line-badge-small ${empresaColor}">${routeData.salida.idLinea}</div>
+                
+                <!-- Segunda Línea -->
+                <div class="line-badge-small ${colorTrasbordo}">${routeData.trasbordo.idLinea}</div>
+                </div>
+                <ion-label>
+                <h2 class="destination-text">TOLEDO CHICO</h2>
+                <p class="sub-info">Empresa: ${empresa}</p>
+                </ion-label>
+                <div slot="end" class="right-info-col">
+                
+                <div class="wait-time">
+                <span class="big-num">${timeData.restanteSalida}</span><span class="min-text">min</span>
+                </div>
+
+                <div class="departure-time">
+                <strong>${timeData.horaSalida} ― ${timeData.horaLlegada}</strong>
+                </div>
+
+                <div class="total-duration">
+                <ion-icon name="hourglass-outline"></ion-icon> ${timeData.minutosTotales} min viaje
+                </div>
+
+                </div>
+                        `;
         } else {
-            htmlContent = headerInfo + `
-            <div class="bus-icons">
-                <h3 class="${color}">${routeData.salida.idLinea}</h3> 
-            </div>`;
+            omnibus.innerHTML = `
+                            <div slot="start" class="line-badge ${empresaColor}">${routeData.salida.idLinea}</div>
+                            <ion-label>
+                                <h2 class="destination-text">TOLEDO CHICO</h2>
+                                <p class="sub-info">Empresa: ${empresa}</p>
+                            </ion-label>
+                            <div slot="end" class="right-info-col">
+    
+                                <div class="wait-time">
+                                    <span class="big-num">${timeData.restanteSalida}</span><span class="min-text">min</span>
+                                </div>
+
+                                <div class="departure-time">
+                                    <strong>${timeData.horaSalida} ― ${timeData.horaLlegada}</strong>
+                                </div>
+
+                                <div class="total-duration">
+                                    <ion-icon name="hourglass-outline"></ion-icon> ${timeData.minutosTotales} min viaje
+                                </div>
+
+                            </div>
+                    `;
+
         }
         
-        omnibus.innerHTML = htmlContent;
         busesList.appendChild(omnibus);
     });
 

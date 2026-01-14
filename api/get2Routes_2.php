@@ -82,8 +82,8 @@
 					if((in_array($codSubVariantes, $llegadasVariantes[$idTrasbordo])) && (array_column($jsonParadas[$llegadaDistancia[$idTrasbordo][$codSubVariantes]["busID"]]["lineas"][$idTrasbordo],"ordinal","cod_varian")[$codSubVariantes] > array_column($jsonParadas[$codVecina]["lineas"][$idTrasbordo],"ordinal","cod_varian")[$codSubVariantes])){
 						$clave = $idLinea . '-' . $idTrasbordo;
 						
-
-						if((!isset($totalTrasbordo[$clave])) || (($totalTrasbordo[$clave]["trasbordo"]["distanciaTrasbordo"] > $vecinas['distancia']) && ($i > $totalTrasbordo[$clave]["salida"]["ordinalLlegada"] + 6))){
+						//&& ($i > $totalTrasbordo[$clave]["salida"]["ordinalLlegada"] + 6)
+						if((!isset($totalTrasbordo[$clave])) || (($totalTrasbordo[$clave]["trasbordo"]["distanciaTrasbordo"] > $vecinas['distancia']))){
 							if($cod_ubic_p == $codVecina){
 								$flag = true;
 							}
