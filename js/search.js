@@ -1,4 +1,4 @@
-import { domElements, state, bottomPanel_container, resultsList, searchPanel } from './globals.js';
+import { domElements, state, bottomPanel_container, resultsList, searchPanel, map } from './globals.js';
 import { liveSearch, getCoordinates } from './api.js';
 import { allRouting } from './routing.js';
 
@@ -149,6 +149,7 @@ export function initSearchListeners() {
             await bottomPanel_container.present();
             allRouting(coordsOrigin, coordsDestiny);
             state.searchRoutes = true;
+            map.removeLayer(state.shelterMarkers);
         } else {
             console.error("Faltan coordenadas para calcular la ruta");
             alert("No se pudieron encontrar las coordenadas. Intenta ser más específico con las calles.");

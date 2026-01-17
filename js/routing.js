@@ -32,6 +32,7 @@ export function allRouting(coordsOrigin, coordsDestiny){
 
     markerSalida.remove();
     markerSalida = L.marker(salida, {icon: greenIcon}).addTo(map);
+    map.markerSalida = markerSalida;
 
     var totalSalida = [];
     for(var i = 0; i < state.markerStops.length; i++){
@@ -54,6 +55,7 @@ export function allRouting(coordsOrigin, coordsDestiny){
 
     markerLlegada.remove();
     markerLlegada = L.marker(llegada, {icon: redIcon}).addTo(map);
+    map.markerLlegada = markerLlegada;
     
     var totalLlegada = [];
     for(var i = 0; i < state.markerStops.length; i++){
@@ -149,6 +151,7 @@ async function handleLines(dataLineas, cSalida, cBajada, cTrasbordo, cLlegada) {
             `);
         }
     }).addTo(map);
+    map.omnibusLinea = omnibusLinea;
 }
 
 function handleUISearch(routeId){
@@ -204,6 +207,8 @@ function handleUISearch(routeId){
             addWaypoints: false, draggableWaypoints: false, fitSelectedRoutes: false, show: false
         }).addTo(map);
 
+        map.routingTrasbordo = routingTrasbordo;
+
         routingLlegada = L.Routing.control({
             waypoints: [ L.latLng(coordsLlegadaBus), llegada ],
             router: L.Routing.osrmv1({ serviceUrl: 'https://routing.openstreetmap.de/routed-foot/route/v1' }),
@@ -224,6 +229,12 @@ function handleUISearch(routeId){
 
     markerSalidaBus.addTo(map);
     markerBajadaBus.addTo(map);
+    map.markerSalidaBus = markerSalidaBus;
+    map.markerBajadaBus = markerBajadaBus;
+    map.markerLlegadaBus = markerLlegadaBus;
+    map.markerTrasbordoBus = markerTrasbordoBus;
+    map.routingSalida = routingSalida;
+    map.routingLlegada = routingLlegada;
     handleLines(rutaSeleccionada, coordsSalidaBus, coordsBajadaBus, coordsTrasbordoBus, coordsLlegadaBus); 
 }
 
