@@ -6,10 +6,6 @@ Alternativa open-source como página/app para el transporte público de Montevid
 
 ![Demo OpenBus MVD.](https://github.com/OpenBusMVD/OpenBus-MVD/blob/main/demo.gif)
 
-Podes verlo en vivo en: [https://openbusmvd.github.io/OpenBus-MVD/](https://openbusmvd.github.io/OpenBus-MVD/)
-
-Al estar hosteado en un servidor gratuito, la página anda considerablemente más lenta. Solo se debe probar como una primer demo y para ver funcionalidad general.
-
 ## Funcionalidades
 
 - Muestra todas las paradas pertenecientes al STM
