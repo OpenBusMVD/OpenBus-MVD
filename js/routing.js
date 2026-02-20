@@ -1,4 +1,4 @@
-import { map, state, sidePanel_container, urlServer } from './globals.js';
+import { map, state, urlServer, busesList, lineas_ucot, lineas_coetc, lineas_come} from './globals.js';
 
 // Variables locales del módulo
 let geojsonData = null;
@@ -20,11 +20,6 @@ var coordsSalidaBus = 0;
 var coordsLlegadaBus = 0;
 var coordsTrasbordoBus = 0;
 
-// Colores de buses
-var lineas_ucot = ["17","71","79","300","306","316","317","328","329","330","370","371","379","396","CE1","L12","L13","L17","L18","L31","L32","L33"];
-var lineas_coetc = ["2","76","402","404","405","407","409","427","456","494","495","CE1","G","L7","L14","L16","L19","L29","PB","D9","DM1"];
-var lineas_come = ["505","522","524","526","538","546","582","L24","L25","L38","D11","DM1"];
-
 export function allRouting(coordsOrigin, coordsDestiny){
     const greenIcon = L.icon({
         iconUrl: 'assets/img/marker-icon-green.png',
@@ -37,6 +32,7 @@ export function allRouting(coordsOrigin, coordsDestiny){
 
     markerSalida.remove();
     markerSalida = L.marker(salida, {icon: greenIcon}).addTo(map);
+    map.markerSalida = markerSalida;
 
     var totalSalida = [];
     for(var i = 0; i < state.markerStops.length; i++){
@@ -59,18 +55,19 @@ export function allRouting(coordsOrigin, coordsDestiny){
 
     markerLlegada.remove();
     markerLlegada = L.marker(llegada, {icon: redIcon}).addTo(map);
+    map.markerLlegada = markerLlegada;
     
     var totalLlegada = [];
     for(var i = 0; i < state.markerStops.length; i++){
          if(!state.latlng[i]) continue;
         var parada = state.latlng[i];
         var distance = map.distance(llegada,parada);
-        if(distance < 500){
+        if(distance < 1000){
             totalLlegada.push({busID: state.markerStops[i].busStopID, distancia: distance});
         }
     }
 
-    sidePanel_container.innerHTML = '<div style="padding:20px; text-align:center;">Calculando mejores rutas...</div>';
+    busesList.innerHTML = '<div style="padding:20px; text-align:center;">Calculando mejores rutas...</div>';
 
     fetch(urlServer + 'api/get2Routes_2.php', {
         method: 'POST',
@@ -81,7 +78,7 @@ export function allRouting(coordsOrigin, coordsDestiny){
     .then(data => handle2Routes(data, salida, llegada))
     .catch(error => {
         console.error('Error:', error.message);
-        sidePanel_container.innerHTML = '<div style="padding:20px; text-align:center; color:red;">Error al calcular rutas.</div>';
+        busesList.innerHTML = '<div style="padding:20px; text-align:center; color:red;">Error al calcular rutas.</div>';
     });
 }
 
@@ -154,6 +151,7 @@ async function handleLines(dataLineas, cSalida, cBajada, cTrasbordo, cLlegada) {
             `);
         }
     }).addTo(map);
+    map.omnibusLinea = omnibusLinea;
 }
 
 function handleUISearch(routeId){
@@ -209,6 +207,8 @@ function handleUISearch(routeId){
             addWaypoints: false, draggableWaypoints: false, fitSelectedRoutes: false, show: false
         }).addTo(map);
 
+        map.routingTrasbordo = routingTrasbordo;
+
         routingLlegada = L.Routing.control({
             waypoints: [ L.latLng(coordsLlegadaBus), llegada ],
             router: L.Routing.osrmv1({ serviceUrl: 'https://routing.openstreetmap.de/routed-foot/route/v1' }),
@@ -229,10 +229,17 @@ function handleUISearch(routeId){
 
     markerSalidaBus.addTo(map);
     markerBajadaBus.addTo(map);
+    map.markerSalidaBus = markerSalidaBus;
+    map.markerBajadaBus = markerBajadaBus;
+    map.markerLlegadaBus = markerLlegadaBus;
+    map.markerTrasbordoBus = markerTrasbordoBus;
+    map.routingSalida = routingSalida;
+    map.routingLlegada = routingLlegada;
     handleLines(rutaSeleccionada, coordsSalidaBus, coordsBajadaBus, coordsTrasbordoBus, coordsLlegadaBus); 
 }
 
 async function handle2Routes(data, salida, llegada){
+    console.log(data);
     let rawEntradas = Object.entries(data);
     
     const promises = rawEntradas.map(async (entry) => {
@@ -260,7 +267,7 @@ async function handle2Routes(data, salida, llegada){
             const url = `${urlServer}api/proxy.php?action=lineas&idParada=${pId}&idLinea=${lId}&idBajada=${bId}&idTrasbordo=${tId}&trasbordoBajada=${idtrasbordoBajada}&idLinea2=${l2Id}&dSalida=${dSalida}&dLlegada=${dLlegada}&dTrasbordo=${dTrasbordo}`;
             
             const response = await fetch(url);
-            console.log(response);
+            //console.log(response);
             const timeData = await response.json();
             
             if (timeData.horaSalida) {
@@ -287,18 +294,20 @@ async function handle2Routes(data, salida, llegada){
 
     entradas = top10.map(item => item.original); 
 
-    sidePanel_container.innerHTML = '';
+    busesList.innerHTML = '';
 
     if (top10.length === 0) {
-        sidePanel_container.innerHTML = '<div style="padding:20px; text-align:center;">No se encontraron servicios disponibles en este momento.</div>';
+        busesList.innerHTML = '<div style="padding:20px; text-align:center;">No se encontraron servicios disponibles en este momento.</div>';
         return;
     }
 
     top10.forEach((item, i) => {
+        console.log(item);
         const routeData = item.original[1];
         const timeData = item.times;
 
-        var omnibus = document.createElement('div');
+        var omnibus = document.createElement('ion-item');
+        omnibus.button = true;
         omnibus.className = 'route';
         if(i == 0) omnibus.classList.add('selected');
         omnibus.id = i;
@@ -323,6 +332,23 @@ async function handle2Routes(data, salida, llegada){
         `;
 
         let htmlContent = "";
+        let empresa, empresaColor;
+        if(lineas_ucot.includes(routeData.salida.idLinea.toString())){
+                        empresa = "UCOT";
+                        empresaColor = "bus-yellow"
+                    }
+                    else if(lineas_coetc.includes(routeData.salida.idLinea.toString())){
+                        empresa = "COETC";
+                        empresaColor = "bus-red"
+                    }
+                    else if(lineas_come.includes(routeData.salida.idLinea.toString())){
+                        empresa = "COME";
+                        empresaColor = "bus-green"
+                    }
+                    else{
+                        empresa = "CUTSCA"
+                        empresaColor = "bus-blue"
+                    }
 
         if(routeData.trasbordo.length != 0){
             let colorTrasbordo;
@@ -331,27 +357,67 @@ async function handle2Routes(data, salida, llegada){
             else if(lineas_come.includes(routeData.trasbordo.idLinea.toString())) colorTrasbordo = "bus-green";
             else colorTrasbordo = "bus-blue";
 
-            htmlContent = headerInfo + `
-            <div class="bus-icons">
-                <h3 class="${color}">${routeData.salida.idLinea}</h3> 
-                <div class="line"></div>
-                <h3 class="${colorTrasbordo}">${routeData.trasbordo.idLinea}</h3> 
-            </div>`;
+            omnibus.innerHTML = `
+                <div slot="start" class="transfer-visual">
+                <!-- Primera Línea -->
+                <div class="line-badge-small ${empresaColor}">${routeData.salida.idLinea}</div>
+                
+                <!-- Segunda Línea -->
+                <div class="line-badge-small ${colorTrasbordo}">${routeData.trasbordo.idLinea}</div>
+                </div>
+                <ion-label>
+                <h2 class="destination-text">TOLEDO CHICO</h2>
+                <p class="sub-info">Empresa: ${empresa}</p>
+                </ion-label>
+                <div slot="end" class="right-info-col">
+                
+                <div class="wait-time">
+                <span class="big-num">${timeData.restanteSalida}</span><span class="min-text">min</span>
+                </div>
+
+                <div class="departure-time">
+                <strong>${timeData.horaSalida} ― ${timeData.horaLlegada}</strong>
+                </div>
+
+                <div class="total-duration">
+                <ion-icon name="hourglass-outline"></ion-icon> ${timeData.minutosTotales} min viaje
+                </div>
+
+                </div>
+                        `;
         } else {
-            htmlContent = headerInfo + `
-            <div class="bus-icons">
-                <h3 class="${color}">${routeData.salida.idLinea}</h3> 
-            </div>`;
+            omnibus.innerHTML = `
+                            <div slot="start" class="line-badge ${empresaColor}">${routeData.salida.idLinea}</div>
+                            <ion-label>
+                                <h2 class="destination-text">TOLEDO CHICO</h2>
+                                <p class="sub-info">Empresa: ${empresa}</p>
+                            </ion-label>
+                            <div slot="end" class="right-info-col">
+    
+                                <div class="wait-time">
+                                    <span class="big-num">${timeData.restanteSalida}</span><span class="min-text">min</span>
+                                </div>
+
+                                <div class="departure-time">
+                                    <strong>${timeData.horaSalida} ― ${timeData.horaLlegada}</strong>
+                                </div>
+
+                                <div class="total-duration">
+                                    <ion-icon name="hourglass-outline"></ion-icon> ${timeData.minutosTotales} min viaje
+                                </div>
+
+                            </div>
+                    `;
+
         }
         
-        omnibus.innerHTML = htmlContent;
-        sidePanel_container.appendChild(omnibus);
+        busesList.appendChild(omnibus);
     });
 
     handleUISearch(0);
 }
 
-sidePanel_container.addEventListener('click', (event) => {
+busesList.addEventListener('click', (event) => {
     const routeDiv = event.target.closest('.route');
     if (routeDiv) {
         document.querySelectorAll('.route').forEach(r => r.classList.remove('selected'));

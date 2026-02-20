@@ -1,4 +1,4 @@
-# OpenBus MVD
+﻿# OpenBus MVD
 
 Alternativa open-source como página/app para el transporte público de Montevideo.
 
@@ -26,7 +26,7 @@ Al estar hosteado en un servidor gratuito, la página anda considerablemente má
 
 ## Tech Stack
 
-- Frontend: HTML, CSS, JavaScript (vanilla)
+- Frontend: HTML, CSS, JavaScript (vanilla), [Ionic](https://github.com/ionic-team/ionic-framework)
 - Backend: PHP
 - Librerías JS: [Leaflet](https://github.com/Leaflet/Leaflet), [Leaflet Routing Machine](https://github.com/perliedman/leaflet-routing-machine), [Turf](https://github.com/Turfjs/turf), [proj4js](https://github.com/proj4js/proj4js)
 - Hosting demo:
